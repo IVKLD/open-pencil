@@ -19,6 +19,7 @@ import { checkConnection, saveCredentials } from './services/connection.service'
 import {
   createScene,
   pullComponent,
+  pullComponents,
   pullPage,
   pullProject,
   pushCurrentComponent,
@@ -45,6 +46,7 @@ export function useShadrStore() {
     saveCredentials,
     checkConnection,
     pullProject,
+    pullComponents,
     pushProject,
     switchScene,
     createScene,

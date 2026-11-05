@@ -67,6 +67,40 @@ export async function pullProject(editor: EditorStore): Promise<boolean> {
   }
 }
 
+/** Pulls only components from backend into the current canvas Assets (_components page) */
+export async function pullComponents(editor: EditorStore): Promise<boolean> {
+  isSyncing.value = true
+  lastError.value = null
+  try {
+    const compIds = await componentService.list()
+    const componentsList = await Promise.all(
+      compIds.map((id) => componentService.get(id).catch(() => null))
+    )
+
+    const compMap: Record<string, ShadrComponent> = {}
+    compIds.forEach((id, i) => {
+      const comp = componentsList[i]
+      if (comp) compMap[id] = comp
+    })
+
+    shadrConverter.importComponentsIntoGraph(editor.graph, compMap)
+    editor.state.sceneVersion++
+    editor.requestRender()
+
+    serverComponents.value = compIds
+    status.value = 'online'
+    toast.info(`Компоненты (${Object.keys(compMap).length}) загружены в Assets!`)
+    return true
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err)
+    lastError.value = msg
+    toast.error(`Ошибка загрузки компонентов: ${msg}`)
+    return false
+  } finally {
+    isSyncing.value = false
+  }
+}
+
 /** Pushes all scenes and components in the project back to the backend */
 export async function pushProject(editor: EditorStore): Promise<boolean> {
   isSyncing.value = true

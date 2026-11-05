@@ -48,6 +48,10 @@ function handlePullProject() {
   void shadr.pullProject(editor)
 }
 
+function handlePullComponents() {
+  void shadr.pullComponents(editor)
+}
+
 function handlePushProject() {
   void shadr.pushProject(editor)
 }
@@ -89,6 +93,24 @@ function handlePushCurrentScene() {
             Deploy проект
           </AppButton>
         </div>
+      </div>
+
+      <!-- Assets / Components quick sync -->
+      <div class="flex flex-col gap-1 p-2 rounded bg-surface-hover/60 border border-border/40">
+        <div class="text-[10px] text-muted flex items-center justify-between font-medium">
+          <span>Компоненты в Assets</span>
+          <span class="text-primary">{{ shadr.serverComponents.value.length }} на сервере</span>
+        </div>
+        <AppButton
+          size="xs"
+          variant="ghost"
+          class="w-full mt-1 border border-border text-xs"
+          :disabled="shadr.isSyncing.value"
+          @click="handlePullComponents"
+        >
+          <icon-lucide-boxes class="size-3 mr-1.5 text-component" />
+          Загрузить компоненты в Assets
+        </AppButton>
       </div>
 
       <!-- Current Scene Switcher -->

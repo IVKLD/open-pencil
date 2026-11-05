@@ -93,61 +93,75 @@ export class ShadrConverter {
     })
 
     // Populate _components page
-    const compEntries = Object.entries(components)
-    if (compEntries.length > 0) {
-      const compPage = graph.createNode('CANVAS', graph.rootId, { name: '_components', width: 0, height: 0 })
-      let offsetX = 100
-      let offsetY = 100
-      let rowHeight = 0
-
-      for (const [compName, comp] of compEntries) {
-        const width = parseCoordinate(comp.params?.width as string | number | undefined, 300)
-        const height = parseCoordinate(comp.params?.height as string | number | undefined, 120)
-
-        const compFrame = graph.createNode('COMPONENT', compPage.id, {
-          name: compName,
-          x: offsetX,
-          y: offsetY,
-          width: Math.max(160, width + 40),
-          height: Math.max(80, height + 40),
-          fills: [
-            {
-              type: 'SOLID',
-              color: { r: 0.07, g: 0.07, b: 0.1, a: 1 },
-              opacity: 1,
-              visible: true
-            }
-          ],
-          pluginData: [
-            {
-              pluginId: SHADR_PLUGIN_ID,
-              key: SHADR_DATA_KEY,
-              value: JSON.stringify({
-                componentName: compName,
-                componentParams: comp.params,
-                blockId: `component_${compName}`
-              } satisfies ShadrNodeData)
-            }
-          ]
-        })
-
-        if (comp.blocks && Array.isArray(comp.blocks)) {
-          for (const block of comp.blocks) {
-            this.#elementToNode(block, compFrame.id, graph)
-          }
-        }
-
-        offsetX += Math.max(160, width + 40) + 60
-        rowHeight = Math.max(rowHeight, height + 40)
-        if (offsetX > 2400) {
-          offsetX = 100
-          offsetY += rowHeight + 80
-          rowHeight = 0
-        }
-      }
-    }
+    this.importComponentsIntoGraph(graph, components)
 
     return graph
+  }
+
+  /** Imports components into a given SceneGraph under the _components page */
+  importComponentsIntoGraph(graph: SceneGraph, components: Record<string, ShadrComponent>): void {
+    const compEntries = Object.entries(components)
+    if (compEntries.length === 0) return
+
+    let compPage = graph.getPages().find((p) => p.name === '_components')
+    if (compPage) {
+      for (const child of graph.getChildren(compPage.id)) {
+        graph.deleteNode(child.id)
+      }
+    } else {
+      compPage = graph.createNode('CANVAS', graph.rootId, { name: '_components', width: 0, height: 0 })
+    }
+
+    let offsetX = 100
+    let offsetY = 100
+    let rowHeight = 0
+
+    for (const [compName, comp] of compEntries) {
+      componentRegistry.set(compName, comp)
+      const width = parseCoordinate(comp.params?.width as string | number | undefined, 300)
+      const height = parseCoordinate(comp.params?.height as string | number | undefined, 120)
+
+      const compFrame = graph.createNode('COMPONENT', compPage.id, {
+        name: compName,
+        x: offsetX,
+        y: offsetY,
+        width: Math.max(160, width + 40),
+        height: Math.max(80, height + 40),
+        fills: [
+          {
+            type: 'SOLID',
+            color: { r: 0.07, g: 0.07, b: 0.1, a: 1 },
+            opacity: 1,
+            visible: true
+          }
+        ],
+        pluginData: [
+          {
+            pluginId: SHADR_PLUGIN_ID,
+            key: SHADR_DATA_KEY,
+            value: JSON.stringify({
+              componentName: compName,
+              componentParams: comp.params,
+              blockId: `component_${compName}`
+            } satisfies ShadrNodeData)
+          }
+        ]
+      })
+
+      if (comp.blocks && Array.isArray(comp.blocks)) {
+        for (const block of comp.blocks) {
+          this.#elementToNode(block, compFrame.id, graph)
+        }
+      }
+
+      offsetX += Math.max(160, width + 40) + 60
+      rowHeight = Math.max(rowHeight, height + 40)
+      if (offsetX > 2400) {
+        offsetX = 100
+        offsetY += rowHeight + 80
+        rowHeight = 0
+      }
+    }
   }
 
   /** Converts the full Project SceneGraph back into Shadr Pages and Components */
