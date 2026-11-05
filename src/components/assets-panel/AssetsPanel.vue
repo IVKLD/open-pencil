@@ -16,6 +16,7 @@ import { createDefaultNode } from '@open-pencil/scene-graph/node-defaults'
 import { useI18n } from '@open-pencil/vue/i18n'
 
 import { useEditorStore } from '@/app/editor/active-store'
+import { autoLoadShadrComponents } from '@/app/integrations/shadr/auto-load'
 import { useLibraryService } from '@/app/libraries'
 import { openExternalLink } from '@/app/shell/ui'
 import AssetThumbnail from '@/components/assets-panel/AssetThumbnail.vue'
@@ -215,7 +216,15 @@ watch(selectedAsset, (asset) => {
 
 onMounted(() => {
   void libraryService.refresh(editor)
+  void autoLoadShadrComponents(editor)
 })
+
+watch(
+  () => editor.state.currentPageId,
+  () => {
+    void autoLoadShadrComponents(editor)
+  }
+)
 
 function clearPreview() {
   previewBlob.value = null
@@ -508,16 +517,29 @@ async function insertSelectedAsset() {
         </div>
       </section>
 
-      <AppPlaceholder
+      <div
         v-if="filteredAssets.length === 0"
-        data-test-id="assets-empty"
-        :label="panels.noLocalComponents"
-        size="compact"
+        class="flex flex-col items-center justify-center p-4 text-center"
       >
-        <template #icon>
-          <icon-lucide-component class="size-4" />
-        </template>
-      </AppPlaceholder>
+        <AppPlaceholder
+          data-test-id="assets-empty"
+          :label="panels.noLocalComponents"
+          size="compact"
+        >
+          <template #icon>
+            <icon-lucide-component class="size-4" />
+          </template>
+        </AppPlaceholder>
+        <AppButton
+          size="xs"
+          variant="outline"
+          class="mt-3 border border-border text-xs"
+          @click="autoLoadShadrComponents(editor)"
+        >
+          <icon-lucide-refresh-cw class="size-3 mr-1.5" />
+          Синхронизировать компоненты Shadr
+        </AppButton>
+      </div>
     </div>
 
     <LibraryManagerDialog v-model="librariesOpen" :initial-section="libraryInitialSection" />
