@@ -95,7 +95,8 @@ describe('Shadr Converter', () => {
     expect(pages.length).toBe(1)
     const rootNodes = graph.getChildren(pages[0].id)
     expect(rootNodes.length).toBe(1)
-    expect(rootNodes[0].name).toBe('component_button')
+    expect(rootNodes[0].name).toBe('button')
+    expect(rootNodes[0].type).toBe('COMPONENT')
 
     const mockEditor = {
       graph,

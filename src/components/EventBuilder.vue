@@ -4,7 +4,6 @@ import { useSelectionState } from '@open-pencil/vue/editor/selection-state'
 import ActionBuilderSection from './event-builder/components/ActionBuilderSection.vue'
 import BlockPropertiesSection from './event-builder/components/BlockPropertiesSection.vue'
 import ComponentParamsSection from './event-builder/components/ComponentParamsSection.vue'
-import ComponentsSection from './event-builder/components/ComponentsSection.vue'
 import ConnectionSection from './event-builder/components/ConnectionSection.vue'
 import EmptySelectionState from './event-builder/components/EmptySelectionState.vue'
 import SyncSection from './event-builder/components/SyncSection.vue'
@@ -19,7 +18,6 @@ const { selectedNode: node } = useSelectionState()
   >
     <ConnectionSection />
     <SyncSection />
-    <ComponentsSection />
 
     <template v-if="node">
       <ComponentParamsSection :node="node" />

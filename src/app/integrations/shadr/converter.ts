@@ -104,8 +104,8 @@ export class ShadrConverter {
         const width = parseCoordinate(comp.params?.width as string | number | undefined, 300)
         const height = parseCoordinate(comp.params?.height as string | number | undefined, 120)
 
-        const compFrame = graph.createNode('FRAME', compPage.id, {
-          name: `component_${compName}`,
+        const compFrame = graph.createNode('COMPONENT', compPage.id, {
+          name: compName,
           x: offsetX,
           y: offsetY,
           width: Math.max(160, width + 40),
@@ -162,7 +162,7 @@ export class ShadrConverter {
 
     for (const pageNode of allPages) {
       if (pageNode.name === '_components') {
-        const compFrames = graph.getChildren(pageNode.id).filter((n: SceneNode) => n.type === 'FRAME')
+        const compFrames = graph.getChildren(pageNode.id).filter((n: SceneNode) => n.type === 'FRAME' || n.type === 'COMPONENT')
         for (const frame of compFrames) {
           const compName = frame.name.replace(/^component_/, '')
           const data = getShadrData(frame)
@@ -243,8 +243,8 @@ export class ShadrConverter {
     const width = parseCoordinate(comp.params?.width as string | number | undefined, 360)
     const height = parseCoordinate(comp.params?.height as string | number | undefined, 120)
 
-    const rootFrame = graph.createNode('FRAME', pageNode.id, {
-      name: `component_${compName}`,
+    const rootFrame = graph.createNode('COMPONENT', pageNode.id, {
+      name: compName,
       x: 0,
       y: 0,
       width: Math.max(200, width + 80),
