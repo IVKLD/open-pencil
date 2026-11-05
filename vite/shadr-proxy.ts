@@ -4,7 +4,12 @@ export function shadrProxyPlugin(): Plugin {
   return {
     name: 'shadr-proxy',
     configureServer(server) {
-      server.middlewares.use('/api/shadr-proxy', async (req, res) => {
+      server.middlewares.use(async (req, res, next) => {
+        const url = req.url || ''
+        if (!url.startsWith('/api/shadr-proxy')) {
+          return next()
+        }
+
         res.setHeader('Access-Control-Allow-Origin', '*')
         res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
         res.setHeader('Access-Control-Allow-Headers', '*')
@@ -15,7 +20,7 @@ export function shadrProxyPlugin(): Plugin {
           return
         }
 
-        const targetUrl = req.headers['x-target-url'] as string
+        const targetUrl = (req.headers['x-target-url'] as string) || ''
         if (!targetUrl) {
           res.statusCode = 400
           res.setHeader('Content-Type', 'application/json')
