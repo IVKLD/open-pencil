@@ -1,6 +1,6 @@
 import { spawn } from 'node:child_process'
 import { createHash, randomUUID } from 'node:crypto'
-import { mkdir } from 'node:fs/promises'
+import { mkdir, rm } from 'node:fs/promises'
 import type { IncomingMessage } from 'node:http'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -197,7 +197,12 @@ export function automationPlugin(
     await mkdir(runtimeDir, { recursive: true, mode: 0o700 })
     const socketPath = platformHasUnixSockets() ? join(runtimeDir, 'mcp.sock') : null
     const discoveryPath = join(runtimeDir, 'mcp.json')
-    const command = ['bun', 'run', 'packages/mcp/src/index.ts']
+    if (socketPath) {
+      await rm(socketPath, { force: true }).catch(() => {})
+    }
+    await rm(discoveryPath, { force: true }).catch(() => {})
+    const bunBin = (process.execPath && process.execPath.includes('bun')) ? process.execPath : 'bun'
+    const command = [bunBin, 'run', 'packages/mcp/src/index.ts']
     const spawnCommand = options.portlessServiceName ? 'portless' : command[0]
     const spawnArgs = options.portlessServiceName
       ? ['run', '--name', options.portlessServiceName, ...command]
