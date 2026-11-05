@@ -17,10 +17,14 @@ import {
 import { componentService } from './services/component.service'
 import { checkConnection, saveCredentials } from './services/connection.service'
 import {
+  createScene,
   pullComponent,
   pullPage,
+  pullProject,
   pushCurrentComponent,
-  pushCurrentPage
+  pushCurrentPage,
+  pushProject,
+  switchScene
 } from './services/sync.service'
 
 export function useShadrStore() {
@@ -40,6 +44,10 @@ export function useShadrStore() {
     lastError,
     saveCredentials,
     checkConnection,
+    pullProject,
+    pushProject,
+    switchScene,
+    createScene,
     pullPage,
     pushCurrentPage,
     pullComponent,

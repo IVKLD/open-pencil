@@ -108,5 +108,37 @@ describe('Shadr Converter', () => {
     expect(exported.params.id).toBe('button')
     expect(exported.blocks.length).toBeGreaterThan(0)
   })
+
+  test('imports full project with multiple scenes and components and exports back', () => {
+    const menuRaw = readFileSync(resolve(process.cwd(), 'docs/shadr/pages/main_menu.json'), 'utf-8')
+    const buttonRaw = readFileSync(resolve(process.cwd(), 'docs/shadr/components/button.json'), 'utf-8')
+    const badgeRaw = readFileSync(resolve(process.cwd(), 'docs/shadr/components/badge.json'), 'utf-8')
+
+    const pages = [JSON.parse(menuRaw) as ShadrPage]
+    const components = {
+      button: JSON.parse(buttonRaw),
+      badge: JSON.parse(badgeRaw)
+    }
+
+    const graph = shadrConverter.importProject(pages, components)
+    const docPages = graph.getPages()
+    expect(docPages.length).toBe(2) // main_menu + _components
+    expect(docPages[0].name).toBe('main_menu')
+    expect(docPages[1].name).toBe('_components')
+
+    const mockEditor = {
+      graph,
+      state: {
+        currentPageId: docPages[0].id
+      }
+    } as unknown as EditorStore
+
+    const exported = shadrConverter.exportProject(mockEditor)
+    expect(exported.pages.length).toBe(1)
+    expect(exported.pages[0].name).toBe('main_menu')
+    expect(Object.keys(exported.components)).toContain('button')
+    expect(Object.keys(exported.components)).toContain('badge')
+  })
 })
+
 

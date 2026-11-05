@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import { useEditorStore } from '@/app/editor/active-store'
 import AppButton from '@/components/ui/button/AppButton.vue'
@@ -10,79 +10,138 @@ import { useShadrStore } from '../useShadrStore'
 
 const editor = useEditorStore()
 const shadr = useShadrStore()
-const pageNameDraft = ref(shadr.selectedPageId.value || 'main_menu')
 
-watch(
-  () => shadr.selectedPageId.value,
-  (newId) => {
-    if (newId) pageNameDraft.value = newId
-  }
-)
+const newSceneName = ref('')
+const isCreatingScene = ref(false)
 
-function handlePullPage() {
-  if (!shadr.selectedPageId.value) return
-  void shadr.pullPage(shadr.selectedPageId.value, editor)
+const projectScenes = computed(() => {
+  const pages = editor.graph.getPages()
+  const names = pages.map((p) => p.name).filter((n) => n !== '_components')
+  return names.length > 0 ? names : shadr.serverPages.value
+})
+
+const activeSceneName = computed(() => {
+  const current = editor.graph.getPages().find((p) => p.id === editor.state.currentPageId)
+  return current ? current.name : shadr.selectedPageId.value || 'main_menu'
+})
+
+const selectedScene = ref(activeSceneName.value)
+
+watch(activeSceneName, (val) => {
+  if (val) selectedScene.value = val
+})
+
+function handleSceneChange() {
+  if (!selectedScene.value) return
+  void shadr.switchScene(selectedScene.value, editor)
 }
 
-function handlePushPage() {
-  const name = pageNameDraft.value.trim() || 'main_menu'
-  void shadr.pushCurrentPage(editor, name)
+function handleCreateScene() {
+  const name = newSceneName.value.trim()
+  if (!name) return
+  void shadr.createScene(name, editor)
+  newSceneName.value = ''
+  isCreatingScene.value = false
+}
+
+function handlePullProject() {
+  void shadr.pullProject(editor)
+}
+
+function handlePushProject() {
+  void shadr.pushProject(editor)
+}
+
+function handlePushCurrentScene() {
+  void shadr.pushCurrentPage(editor, activeSceneName.value)
 }
 </script>
 
 <template>
-  <PanelSection label="Страницы Shadr">
+  <PanelSection label="Проект и сцены Shadr">
     <div class="flex flex-col gap-2.5">
-      <!-- Active state banner -->
-      <div
-        v-if="shadr.currentDocumentType.value === 'page' && shadr.currentDocumentId.value"
-        class="text-[10px] px-2 py-1 bg-surface-hover rounded text-muted flex items-center justify-between"
-      >
-        <span>Активный макет:</span>
-        <span class="font-medium text-text">{{ shadr.currentDocumentId.value }}</span>
+      <!-- Project actions -->
+      <div class="flex flex-col gap-1 p-2 rounded bg-surface-hover/60 border border-border/40">
+        <div class="text-[10px] text-muted flex items-center justify-between font-medium">
+          <span>Синхронизация проекта</span>
+          <span class="text-primary">{{ projectScenes.length }} сцен</span>
+        </div>
+        <div class="flex items-center gap-1.5 mt-1">
+          <AppButton
+            size="xs"
+            variant="solid"
+            color="primary"
+            class="flex-1"
+            :disabled="shadr.isSyncing.value"
+            @click="handlePullProject"
+          >
+            <icon-lucide-download-cloud class="size-3 mr-1" />
+            Pull проект
+          </AppButton>
+          <AppButton
+            size="xs"
+            variant="ghost"
+            class="flex-1 border border-border"
+            :disabled="shadr.isSyncing.value"
+            @click="handlePushProject"
+          >
+            <icon-lucide-upload-cloud class="size-3 mr-1" />
+            Deploy проект
+          </AppButton>
+        </div>
       </div>
 
+      <!-- Current Scene Switcher -->
       <div class="flex flex-col gap-1">
-        <label class="text-[10px] text-muted font-medium">Страница на сервере</label>
+        <div class="flex items-center justify-between">
+          <label class="text-[10px] text-muted font-medium">Текущая сцена (Page)</label>
+          <button
+            type="button"
+            class="text-[10px] text-primary hover:underline"
+            @click="isCreatingScene = !isCreatingScene"
+          >
+            {{ isCreatingScene ? 'Отмена' : '+ Новая сцена' }}
+          </button>
+        </div>
+
+        <div v-if="isCreatingScene" class="flex items-center gap-1.5 py-1">
+          <AppInput
+            v-model="newSceneName"
+            placeholder="имя_сцены"
+            class="flex-1"
+            @keydown.enter="handleCreateScene"
+          />
+          <AppButton size="xs" variant="solid" color="primary" @click="handleCreateScene">
+            Создать
+          </AppButton>
+        </div>
+
         <div class="flex items-center gap-1.5">
           <select
-            v-model="shadr.selectedPageId.value"
+            v-model="selectedScene"
             class="flex-1 h-7 px-2 rounded bg-surface border border-border text-xs focus:outline-none focus:border-primary"
+            @change="handleSceneChange"
           >
-            <option v-for="id in shadr.serverPages.value" :key="id" :value="id">
+            <option v-for="id in projectScenes" :key="id" :value="id">
               {{ id }}
             </option>
           </select>
           <AppButton
             size="xs"
             variant="ghost"
-            :disabled="shadr.isSyncing.value || !shadr.selectedPageId.value"
-            @click="handlePullPage"
-          >
-            <icon-lucide-download class="size-3 mr-1" />
-            Pull
-          </AppButton>
-        </div>
-      </div>
-
-      <div class="flex flex-col gap-1">
-        <label class="text-[10px] text-muted font-medium">Имя для сохранения</label>
-        <div class="flex items-center gap-1.5">
-          <AppInput v-model="pageNameDraft" placeholder="main_menu" class="flex-1" />
-          <AppButton
-            size="xs"
-            color="primary"
-            variant="solid"
             :disabled="shadr.isSyncing.value"
-            @click="handlePushPage"
+            @click="handlePushCurrentScene"
           >
-            <icon-lucide-upload-cloud class="size-3 mr-1" />
-            Deploy
+            <icon-lucide-upload class="size-3 mr-1" />
+            Deploy сцену
           </AppButton>
         </div>
       </div>
 
-      <div v-if="shadr.lastError.value" class="text-[11px] text-danger bg-danger/10 p-2 rounded border border-danger/20">
+      <div
+        v-if="shadr.lastError.value"
+        class="text-[11px] text-danger bg-danger/10 p-2 rounded border border-danger/20"
+      >
         {{ shadr.lastError.value }}
       </div>
     </div>
