@@ -1,34 +1,17 @@
 import { serverUrl, token } from '../store/state'
 
-const ENV_URL = (import.meta.env?.VITE_SHADR_API_URL || '').replace(/\/+$/, '')
-
 export async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const baseUrl = serverUrl.value.replace(/\/+$/, '')
   const currentToken = token.value.trim()
-  const fullUrl = `${baseUrl}${path}`
-
   const isBrowser = typeof window !== 'undefined'
-  const isCrossOrigin =
-    isBrowser &&
-    typeof window.location !== 'undefined' &&
-    !fullUrl.startsWith(window.location.origin) &&
-    /^https?:\/\//.test(fullUrl)
 
-  let url = fullUrl
+  // In browser development, use the Vite dev server proxy to avoid CORS issues
+  const url = isBrowser ? `/api/shadr${path}` : `${baseUrl}${path}`
+
   const headers: Record<string, string> = {
     Accept: 'application/json',
     Authorization: `Bearer ${currentToken}`,
     ...(options.headers as Record<string, string>)
-  }
-
-  if (isCrossOrigin) {
-    // If targeting the configured backend URL from environment, use Vite's native dev server proxy
-    if (!baseUrl || (ENV_URL && baseUrl === ENV_URL)) {
-      url = `/api/shadr${path}`
-    } else {
-      url = '/api/shadr-proxy'
-      headers['x-target-url'] = fullUrl
-    }
   }
 
   if (options.body && typeof options.body === 'string') {

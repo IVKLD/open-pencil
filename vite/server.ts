@@ -39,7 +39,8 @@ function hmrOptions(host: string | undefined, hmrURL: string | undefined): Serve
 export function createDevServerOptions(
   host: string | undefined,
   rootDir: string,
-  hmrURL?: string
+  hmrURL?: string,
+  shadrApiUrl?: string
 ): ServerOptions {
   return {
     port: 1420,
@@ -49,10 +50,10 @@ export function createDevServerOptions(
     // Vite forwards browser logs to the terminal when an agent starts it. Vue warnings carry the
     // component's props, and serializing the editor state behind them freezes the tab, so only
     // errors are forwarded.
-    proxy: process.env.VITE_SHADR_API_URL
+    proxy: shadrApiUrl
       ? {
           '/api/shadr': {
-            target: process.env.VITE_SHADR_API_URL,
+            target: shadrApiUrl,
             changeOrigin: true,
             secure: false,
             rewrite: (p) => p.replace(/^\/api\/shadr/, '')

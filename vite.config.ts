@@ -29,7 +29,6 @@ import { metricsBrandPlugin } from './vite/metrics'
 import { chunkFileNames, openPencilPwaPlugin } from './vite/pwa'
 import { rawMarkdownPlugin } from './vite/raw-markdown'
 import { createDevServerOptions } from './vite/server'
-import { shadrProxyPlugin } from './vite/shadr-proxy'
 
 const host = process.env.TAURI_DEV_HOST
 const automationRoute = localAutomationRoute(host)
@@ -83,7 +82,6 @@ export default defineConfig(async ({ command, mode }) => {
       Components({ resolvers: [IconsResolver({ prefix: 'icon', customCollections: ['ai'] })] }),
       automation ? openPencilAutomationPlugin(command, host) : undefined,
       vue(),
-      shadrProxyPlugin(),
       metrics ? metricsBrandPlugin((outDir) => resolve(outDir, '..')) : openPencilPwaPlugin(),
       cloudSite ? cloudSitePlugin() : undefined
     ],
@@ -122,7 +120,8 @@ export default defineConfig(async ({ command, mode }) => {
     server: createDevServerOptions(
       host,
       __dirname,
-      cloudSite ? process.env.PORTLESS_URL : undefined
+      cloudSite ? process.env.PORTLESS_URL : undefined,
+      env.VITE_SHADR_API_URL
     )
   }
 })
