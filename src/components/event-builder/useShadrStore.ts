@@ -1,17 +1,27 @@
 import {
+  currentDocumentId,
+  currentDocumentType,
   isConnecting,
   isOnline,
   isSyncing,
   lastError,
+  selectedComponentId,
   selectedPageId,
+  serverComponents,
   serverPages,
   serverUrl,
   status,
   token
 } from '@/app/integrations/shadr/store/state'
 
+import { componentService } from './services/component.service'
 import { checkConnection, saveCredentials } from './services/connection.service'
-import { pullPage, pushCurrentPage } from './services/sync.service'
+import {
+  pullComponent,
+  pullPage,
+  pushCurrentComponent,
+  pushCurrentPage
+} from './services/sync.service'
 
 export function useShadrStore() {
   return {
@@ -23,10 +33,17 @@ export function useShadrStore() {
     isSyncing,
     serverPages,
     selectedPageId,
+    serverComponents,
+    selectedComponentId,
+    currentDocumentType,
+    currentDocumentId,
     lastError,
     saveCredentials,
     checkConnection,
     pullPage,
-    pushCurrentPage
+    pushCurrentPage,
+    pullComponent,
+    pushCurrentComponent,
+    insertComponentInstance: componentService.insertComponentInstance
   }
 }

@@ -2,7 +2,9 @@ import { setCookie } from '@/app/integrations/shadr/store/cookie'
 import {
   COOKIE_KEY_TOKEN,
   lastError,
+  selectedComponentId,
   selectedPageId,
+  serverComponents,
   serverPages,
   serverUrl,
   status,
@@ -10,17 +12,29 @@ import {
   token
 } from '@/app/integrations/shadr/store/state'
 
+import { componentService } from './component.service'
 import { pageService } from './page.service'
 
 export async function checkConnection(): Promise<boolean> {
   status.value = 'connecting'
   lastError.value = null
   try {
-    const pages = await pageService.list()
+    const [pages, components] = await Promise.all([
+      pageService.list(),
+      componentService.list().catch((): string[] => [])
+    ])
     serverPages.value = pages
     if (pages.length > 0 && !pages.includes(selectedPageId.value)) {
       selectedPageId.value = pages[0]
     }
+
+    if (components.length > 0) {
+      serverComponents.value = components
+      if (!components.includes(selectedComponentId.value)) {
+        selectedComponentId.value = components[0]
+      }
+    }
+
     status.value = 'online'
     return true
   } catch (err) {

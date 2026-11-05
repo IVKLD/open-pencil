@@ -26,7 +26,7 @@ export interface ShadrElement {
   layer?: number
   position?: ShadrPosition
   size?: ShadrSize
-  color?: string
+  color?: string | number
   opacity?: number
   rounding?: ShadrRounding
   interactive?: boolean

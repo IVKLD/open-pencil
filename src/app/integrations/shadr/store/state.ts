@@ -23,4 +23,10 @@ export const isSyncing = ref(false)
 
 export const serverPages = ref<string[]>([])
 export const selectedPageId = ref<string>('main_menu')
+export const serverComponents = ref<string[]>([])
+export const selectedComponentId = ref<string>('button')
+
+export const currentDocumentType = ref<'page' | 'component'>('page')
+export const currentDocumentId = ref<string>('main_menu')
+
 export const lastError = ref<string | null>(null)

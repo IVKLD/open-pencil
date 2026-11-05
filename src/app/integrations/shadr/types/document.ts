@@ -18,7 +18,7 @@ export interface ShadrSize {
 
 export interface ShadrRounding {
   radius?: number
-  size?: 'small' | 'medium' | 'large'
+  size?: 'small' | 'medium' | 'large' | 'regular' | string
 }
 
 export interface ShadrPage {

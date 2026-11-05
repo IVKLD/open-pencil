@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 
 import { useEditorStore } from '@/app/editor/active-store'
 import AppButton from '@/components/ui/button/AppButton.vue'
@@ -11,6 +11,13 @@ import { useShadrStore } from '../useShadrStore'
 const editor = useEditorStore()
 const shadr = useShadrStore()
 const pageNameDraft = ref(shadr.selectedPageId.value || 'main_menu')
+
+watch(
+  () => shadr.selectedPageId.value,
+  (newId) => {
+    if (newId) pageNameDraft.value = newId
+  }
+)
 
 function handlePullPage() {
   if (!shadr.selectedPageId.value) return
@@ -24,8 +31,17 @@ function handlePushPage() {
 </script>
 
 <template>
-  <PanelSection label="Синхронизация меню">
+  <PanelSection label="Страницы Shadr">
     <div class="flex flex-col gap-2.5">
+      <!-- Active state banner -->
+      <div
+        v-if="shadr.currentDocumentType.value === 'page' && shadr.currentDocumentId.value"
+        class="text-[10px] px-2 py-1 bg-surface-hover rounded text-muted flex items-center justify-between"
+      >
+        <span>Активный макет:</span>
+        <span class="font-medium text-text">{{ shadr.currentDocumentId.value }}</span>
+      </div>
+
       <div class="flex flex-col gap-1">
         <label class="text-[10px] text-muted font-medium">Страница на сервере</label>
         <div class="flex items-center gap-1.5">

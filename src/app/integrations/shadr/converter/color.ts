@@ -8,8 +8,12 @@ export function colorToShadrHex(c?: Color): string {
   return `${r}${g}${b}`
 }
 
-export function shadrHexToColor(hex: string, opacity?: number): { color: Color; opacity: number } {
-  const clean = hex.replace(/^#/, '').trim()
+export function shadrHexToColor(
+  hex: string | number,
+  opacity?: number
+): { color: Color; opacity: number } {
+  const hexStr = typeof hex === 'number' ? hex.toString(16).padStart(6, '0') : String(hex)
+  const clean = hexStr.replace(/^#/, '').trim()
   const r = parseInt(clean.slice(0, 2), 16) / 255 || 0
   const g = parseInt(clean.slice(2, 4), 16) / 255 || 0
   const b = parseInt(clean.slice(4, 6), 16) / 255 || 0
