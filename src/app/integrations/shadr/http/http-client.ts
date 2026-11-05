@@ -22,8 +22,8 @@ export async function request<T>(path: string, options: RequestInit = {}): Promi
   }
 
   if (isCrossOrigin) {
-    // If targeting the configured backend, use Vite's native dev server proxy
-    if (!baseUrl || baseUrl === ENV_URL || baseUrl.includes('167.233.151.217')) {
+    // If targeting the configured backend URL from environment, use Vite's native dev server proxy
+    if (!baseUrl || (ENV_URL && baseUrl === ENV_URL)) {
       url = `/api/shadr${path}`
     } else {
       url = '/api/shadr-proxy'

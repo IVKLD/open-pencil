@@ -49,14 +49,16 @@ export function createDevServerOptions(
     // Vite forwards browser logs to the terminal when an agent starts it. Vue warnings carry the
     // component's props, and serializing the editor state behind them freezes the tab, so only
     // errors are forwarded.
-    proxy: {
-      '/api/shadr': {
-        target: process.env.VITE_SHADR_API_URL || 'http://167.233.151.217:43251/api/v1',
-        changeOrigin: true,
-        secure: false,
-        rewrite: (p) => p.replace(/^\/api\/shadr/, '')
-      }
-    },
+    proxy: process.env.VITE_SHADR_API_URL
+      ? {
+          '/api/shadr': {
+            target: process.env.VITE_SHADR_API_URL,
+            changeOrigin: true,
+            secure: false,
+            rewrite: (p) => p.replace(/^\/api\/shadr/, '')
+          }
+        }
+      : undefined,
     watch: {
       // Ignore nested checkouts, not an active checkout whose own path contains .worktrees.
       ignored: [...WATCH_IGNORED, `${normalizePath(resolve(rootDir, '.worktrees'))}/**`]
