@@ -367,4 +367,107 @@ describe('Shadr Component Converter', () => {
     expect(exportedBtn?.type).toBe('component')
     expect(exportedBtn?.params?.width).toBe(118)
   })
+
+  test('ensures child elements always have layer greater than parent layer', () => {
+    const graph = new SceneGraph()
+    const pageNode = graph.getPages()[0]
+    const rootFrame = graph.createNode('FRAME', pageNode.id, {
+      name: 'hud',
+      x: 0,
+      y: 0,
+      width: 1920,
+      height: 1080
+    })
+
+    const parentBox = graph.createNode('RECTANGLE', rootFrame.id, {
+      name: 'button_box',
+      x: 100,
+      y: 100,
+      width: 120,
+      height: 44
+    })
+    graph.updateNode(parentBox.id, {
+      pluginData: [
+        {
+          pluginId: 'minecraft',
+          key: 'shadr',
+          value: JSON.stringify({ blockId: 'btn', layer: 20 })
+        }
+      ]
+    })
+
+    const childText = graph.createNode('TEXT', parentBox.id, {
+      name: 'label',
+      x: 20,
+      y: 12,
+      width: 80,
+      height: 20,
+      text: 'CANCEL'
+    })
+    graph.updateNode(childText.id, {
+      pluginData: [
+        {
+          pluginId: 'minecraft',
+          key: 'shadr',
+          value: JSON.stringify({ blockId: 'btn_label', layer: 12 })
+        }
+      ]
+    })
+
+    const mockEditor = asDouble<EditorStore>({
+      graph,
+      state: { currentPageId: pageNode.id }
+    })
+    const exported = shadrConverter.exportPage(mockEditor, 'hud')
+    const exportedParent = exported.blocks.find((b) => b.id === 'btn')
+    expect(exportedParent?.layer).toBe(20)
+    const exportedChild = exportedParent?.children?.[0]
+    expect(exportedChild?.type).toBe('text')
+    expect(exportedChild?.text).toBe('CANCEL')
+    expect(exportedChild?.layer).toBeGreaterThan(exportedParent?.layer ?? 0)
+  })
+
+  test('exports button_ghost instance from _components with label preserved', () => {
+    const ghostRaw = readFileSync(
+      resolve(process.cwd(), 'docs/shadr/components/button_ghost.json'),
+      'utf-8'
+    )
+    const ghostComp = JSON.parse(ghostRaw)
+
+    const graph = new SceneGraph()
+    shadrConverter.importComponentsIntoGraph(graph, { button_ghost: ghostComp })
+
+    const pageNode = graph.getPages()[0]
+    const rootFrame = graph.createNode('FRAME', pageNode.id, {
+      name: 'shop_ui',
+      x: 0,
+      y: 0,
+      width: 1920,
+      height: 1080
+    })
+
+    const compPage = graph.getPages().find((p) => p.name === '_components')
+    const ghostDef = compPage
+      ? graph.getChildren(compPage.id).find((n) => n.name === 'button_ghost')
+      : undefined
+    expect(ghostDef).toBeDefined()
+    if (!ghostDef) throw new Error('ghostDef not found')
+
+    const instance = graph.createInstance(ghostDef.id, rootFrame.id, { x: 1000, y: 700 })
+    const labelChild = graph.getChildren(instance.id).find((c) => c.type === 'TEXT')
+    expect(labelChild).toBeDefined()
+    if (labelChild) {
+      graph.updateNode(labelChild.id, { text: 'CANCEL' })
+    }
+
+    const mockEditor = asDouble<EditorStore>({
+      graph,
+      state: { currentPageId: pageNode.id }
+    })
+    const exported = shadrConverter.exportPage(mockEditor, 'shop_ui')
+    const exportedGhost = exported.blocks.find((b) => b.component === 'button_ghost')
+    expect(exportedGhost).toBeDefined()
+    expect(exportedGhost?.type).toBe('component')
+    expect(exportedGhost?.params?.label).toBe('CANCEL')
+  })
 })

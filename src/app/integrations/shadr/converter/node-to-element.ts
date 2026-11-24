@@ -531,23 +531,28 @@ function buildGridBlockElement(
   id: string,
   data: ShadrNodeData,
   graph: SceneGraph,
-  depth: number
+  depth: number,
+  minLayer = 0
 ): ShadrElement {
   const children = graph.getChildren(node.id)
   if (hasCustomGridChildPositions(node, children)) {
+    const layer = Math.max(data.layer ?? 12 + depth * 2, minLayer)
     const container: ShadrElement = {
       type: 'block',
       id,
-      layer: data.layer ?? 12 + depth * 2,
+      layer,
       opacity: 0,
       size: resolveElementExportSize(node, data),
       position: resolveElementExportPosition(node, data),
-      children: children.map((c: SceneNode, i: number) => nodeToElement(c, graph, depth + 1 + i))
+      children: children.map((c: SceneNode, i: number) =>
+        nodeToElement(c, graph, depth + 1 + i, false, layer + 1)
+      )
     }
     applyInteractions(data, container)
     return container
   }
 
+  const childMinLayer = Math.max(minLayer, data.layer !== undefined ? data.layer + 1 : 0)
   const elem: ShadrElement = {
     type: 'grid_block',
     id,
@@ -555,7 +560,7 @@ function buildGridBlockElement(
     gap: Math.round(node.itemSpacing || 0),
     position: resolveElementExportPosition(node, data),
     children: children.map((c: SceneNode, i: number) =>
-      nodeToElement(c, graph, depth + 1 + i, true)
+      nodeToElement(c, graph, depth + 1 + i, true, childMinLayer)
     )
   }
   applyInteractions(data, elem)
@@ -607,7 +612,8 @@ export function nodeToElement(
   node: SceneNode,
   graph: SceneGraph,
   depth = 0,
-  isGridChild = false
+  isGridChild = false,
+  minLayer = 0
 ): ShadrElement {
   const data = getShadrData(node, graph)
   const id =
@@ -623,10 +629,10 @@ export function nodeToElement(
   }
 
   if (node.layoutMode === 'HORIZONTAL' || node.layoutMode === 'VERTICAL') {
-    return buildGridBlockElement(node, id, data, graph, depth)
+    return buildGridBlockElement(node, id, data, graph, depth, minLayer)
   }
 
-  const layer = data.layer ?? 12 + depth * 2
+  const layer = Math.max(data.layer ?? 12 + depth * 2, minLayer)
   const base: ShadrElement = {
     type: 'block',
     id,
@@ -661,7 +667,7 @@ export function nodeToElement(
   const children = graph.getChildren(node.id)
   if (children.length > 0) {
     base.children = children.map((c: SceneNode, i: number) =>
-      nodeToElement(c, graph, depth + 1 + i)
+      nodeToElement(c, graph, depth + 1 + i, false, layer + 1)
     )
   }
 

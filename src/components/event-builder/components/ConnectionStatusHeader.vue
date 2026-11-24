@@ -178,6 +178,13 @@ const tips = {
         <span class="shrink-0 text-muted ml-1 font-sans">отправка...</span>
       </div>
     </Tip>
+    <div
+      v-else-if="shadr.isSyncing.value"
+      class="flex items-center gap-1.5 px-2 py-1 rounded bg-primary/10 border border-primary/25 text-2xs text-primary shadow-xs"
+    >
+      <icon-lucide-loader-2 class="size-3 animate-spin shrink-0 text-primary" />
+      <span class="truncate">Загрузка ассетов и сцены на сервер...</span>
+    </div>
 
     <!-- Network Activity Log Drawer -->
     <div

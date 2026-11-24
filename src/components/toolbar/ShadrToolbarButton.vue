@@ -126,7 +126,11 @@ const menuTips = {
           aria-label="Minecraft Shadr"
           :class="styles.button({ class: ui?.button })"
         >
-          <icon-lucide-gamepad-2 :class="styles.icon({ class: ui?.icon })" />
+          <icon-lucide-loader-2
+            v-if="isSyncing || isNetworkActive"
+            :class="[styles.icon({ class: ui?.icon }), 'animate-spin text-primary']"
+          />
+          <icon-lucide-gamepad-2 v-else :class="styles.icon({ class: ui?.icon })" />
         </ToolbarButton>
       </DropdownMenuTrigger>
     </Tip>
@@ -179,8 +183,14 @@ const menuTips = {
           <DropdownMenuItem :disabled="isSyncing" :class="menuStyles.item()" @select="handlePush">
             <Tip :label="menuTips.pushCurrentPage" side="right">
               <span class="w-full flex items-center gap-2">
-                <icon-lucide-upload :class="menuStyles.icon()" />
-                <span class="flex-1">Отправить на сервер</span>
+                <icon-lucide-loader-2
+                  v-if="isSyncing"
+                  :class="[menuStyles.icon(), 'animate-spin text-primary']"
+                />
+                <icon-lucide-upload v-else :class="menuStyles.icon()" />
+                <span class="flex-1">{{
+                  isSyncing ? 'Загрузка на сервер...' : 'Отправить на сервер'
+                }}</span>
                 <span class="text-2xs text-muted font-mono ml-2">Ctrl+Shift+U</span>
               </span>
             </Tip>
