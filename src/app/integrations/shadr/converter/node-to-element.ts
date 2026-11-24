@@ -1,4 +1,4 @@
-import { isEqual } from 'es-toolkit'
+import { isEqual, isString } from 'es-toolkit'
 
 import type { SceneGraph, SceneNode, Stroke } from '@open-pencil/scene-graph'
 import type { Vector } from '@open-pencil/scene-graph/primitives'
@@ -29,7 +29,7 @@ function applyComponentStrokes(node: SceneNode, params: Record<string, ShadrPara
     const strokeHex = colorToShadrHex(primaryStroke.color)
     if (params.border !== undefined) params.border = strokeHex
     if (params.borderColor !== undefined) params.borderColor = strokeHex
-    if (params.outline !== undefined && typeof params.outline === 'string') {
+    if (params.outline !== undefined && isString(params.outline)) {
       params.outline = strokeHex
     }
   }
@@ -151,7 +151,7 @@ function getEffectiveChildPosition(child: SceneNode, tmplChild: ShadrElement): V
 }
 
 function extractSingleParamKey(val: unknown): string | undefined {
-  if (typeof val !== 'string') return undefined
+  if (!isString(val)) return undefined
   const match = val.match(/^\$\{([a-zA-Z0-9_]+)\}$/)
   return match?.[1]
 }
@@ -261,8 +261,7 @@ function buildComponentParams(
 
   if (node.cornerRadius !== undefined && params.rounding !== undefined) {
     const r = node.cornerRadius
-    params.rounding =
-      typeof params.rounding === 'string' ? resolveRoundingSizeName(r) : Math.round(r)
+    params.rounding = isString(params.rounding) ? resolveRoundingSizeName(r) : Math.round(r)
   }
 
   applyComponentStrokes(node, params)
@@ -313,7 +312,7 @@ function buildComponentElement(
 }
 
 function preserveFormula(val: number, raw?: number | string): number | string {
-  return typeof raw === 'string' && parseCoordinate(raw, 0) === val ? raw : val
+  return isString(raw) && parseCoordinate(raw, 0) === val ? raw : val
 }
 
 function resolveElementExportPosition(
@@ -352,19 +351,14 @@ function applyStrokeOutline(node: SceneNode, base: ShadrElement): void {
 }
 
 function resolveExportFont(node: SceneNode, customFont?: string): string | undefined {
+  if (customFont && customFont.startsWith('shadr')) {
+    return customFont
+  }
   if (node.fontFamily === 'Silkscreen') {
-    if (
-      customFont &&
-      !customFont.startsWith('shadr') &&
-      customFont !== 'minecraft:default' &&
-      customFont !== 'default'
-    ) {
+    if (customFont && customFont !== 'minecraft:default' && customFont !== 'default') {
       return customFont
     }
     return undefined
-  }
-  if (customFont && customFont.startsWith('shadr')) {
-    return customFont
   }
   const weight = node.fontWeight
   if (weight && weight >= 700) return 'shadr_bold'
@@ -544,7 +538,7 @@ function buildGridBlockElement(
     const container: ShadrElement = {
       type: 'block',
       id,
-      layer: data.layer ?? depth * 2,
+      layer: data.layer ?? 12 + depth * 2,
       opacity: 0,
       size: resolveElementExportSize(node, data),
       position: resolveElementExportPosition(node, data),
@@ -632,7 +626,7 @@ export function nodeToElement(
     return buildGridBlockElement(node, id, data, graph, depth)
   }
 
-  const layer = data.layer ?? depth * 2
+  const layer = data.layer ?? 12 + depth * 2
   const base: ShadrElement = {
     type: 'block',
     id,

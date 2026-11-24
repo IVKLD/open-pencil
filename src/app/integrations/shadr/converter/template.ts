@@ -1,3 +1,5 @@
+import { isString } from 'es-toolkit'
+
 import type { ShadrComponent, ShadrElement, ShadrParamValue } from '../types'
 
 /** Global registry of loaded Shadr component templates */
@@ -14,7 +16,7 @@ function interpolateVal(
   val: string | number | boolean,
   params: Record<string, ShadrParamValue>
 ): string | number | boolean {
-  if (typeof val !== 'string') return val
+  if (!isString(val)) return val
   const singleMatch = val.match(/^\$\{([a-zA-Z0-9_]+)\}$/)
   if (singleMatch) {
     const pVal = params[singleMatch[1]]
@@ -27,11 +29,11 @@ function interpolateCoord(
   val: string | number,
   params: Record<string, ShadrParamValue>
 ): string | number {
-  if (typeof val !== 'string') return val
+  if (!isString(val)) return val
   let res: string | number | boolean = interpolateVal(val, params)
-  if (typeof res === 'string') {
+  if (isString(res)) {
     for (const [key, pVal] of Object.entries(params)) {
-      if (typeof pVal === 'number' || typeof pVal === 'string') {
+      if (typeof pVal === 'number' || isString(pVal)) {
         const escaped = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
         res = res.replace(new RegExp(`\\b${escaped}\\b`, 'g'), String(pVal))
       }
@@ -54,7 +56,7 @@ export function interpolateElement(
     if (str) cloned[prop] = interpolateStr(str, params)
   }
 
-  if (typeof cloned.color === 'string') {
+  if (isString(cloned.color)) {
     cloned.color = interpolateStr(cloned.color, params)
   }
 
@@ -83,9 +85,7 @@ export function interpolateElement(
     const nextSize = cloned.rounding.size ? interpolateVal(cloned.rounding.size, params) : undefined
     cloned.rounding = {
       ...cloned.rounding,
-      ...(nextSize !== undefined
-        ? { size: typeof nextSize === 'boolean' ? String(nextSize) : String(nextSize) }
-        : {})
+      ...(nextSize !== undefined ? { size: String(nextSize) } : {})
     }
   }
 

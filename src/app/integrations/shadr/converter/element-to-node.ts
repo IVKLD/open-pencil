@@ -1,3 +1,5 @@
+import { isString } from 'es-toolkit'
+
 import type { Fill, NodeType, SceneGraph, SceneNode, Stroke } from '@open-pencil/scene-graph'
 import { TRANSPARENT } from '@open-pencil/scene-graph/constants'
 import type { Rect } from '@open-pencil/scene-graph/primitives'
@@ -138,9 +140,13 @@ function resolveElementBounds(elem: ShadrElement, parentWidth?: number): Rect {
   return { x, y, width, height }
 }
 
+function resolveBlockId(elem: ShadrElement): string | undefined {
+  return elem.id || (isString(elem.params?.id) ? elem.params.id : undefined)
+}
+
 function resolveElementDisplayName(elem: ShadrElement): string {
   if (elem.component) {
-    const id = elem.id || (typeof elem.params?.id === 'string' ? elem.params.id : undefined)
+    const id = resolveBlockId(elem)
     return id ? `[${elem.component}] ${id}` : `[${elem.component}]`
   }
   if (elem.type === 'image' && elem.image) {
@@ -254,7 +260,7 @@ function resolveShadrFont(fontName: string | undefined): {
 
   if (name.startsWith('shadr')) {
     return {
-      fontFamily: 'Inter',
+      fontFamily: 'Silkscreen',
       fontWeight: isSemibold ? 600 : 400
     }
   }
@@ -282,11 +288,7 @@ function applyTextConstraints(elem: ShadrElement, props: Partial<SceneNode>): vo
     if (elem.textAlign === 'center') props.horizontalConstraint = 'CENTER'
     else if (elem.textAlign === 'right') props.horizontalConstraint = 'MAX'
   }
-  if (
-    !props.verticalConstraint &&
-    typeof elem.position?.y === 'string' &&
-    elem.position.y.includes('/ 2')
-  ) {
+  if (!props.verticalConstraint && isString(elem.position?.y) && elem.position.y.includes('/ 2')) {
     props.verticalConstraint = 'CENTER'
   }
 }
@@ -339,7 +341,7 @@ function configureNodeTypeAndProps(
 function buildShadrNodeData(elem: ShadrElement): ShadrNodeData {
   return {
     ...elem,
-    blockId: elem.id || (typeof elem.params?.id === 'string' ? elem.params.id : undefined),
+    blockId: resolveBlockId(elem),
     rawType: elem.type,
     rawColor: elem.color,
     rawOpacity: elem.opacity,
@@ -429,7 +431,7 @@ function appendElementChildren(
 
 function isShadrBackgroundElement(elem: ShadrElement): boolean {
   if (elem.type === 'blur') return true
-  const id = elem.id || (typeof elem.params?.id === 'string' ? elem.params.id : '')
+  const id = resolveBlockId(elem) ?? ''
   if (id === 'backdrop' || id === 'scrim' || id.endsWith('_scrim')) return true
   if (elem.component === 'panel') return true
   return !elem.children?.length && (id === 'panel' || id.endsWith('_panel'))
