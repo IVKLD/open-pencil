@@ -1,3 +1,4 @@
+import { execSync } from 'node:child_process'
 import { resolve } from 'node:path'
 import process from 'node:process'
 
@@ -33,6 +34,16 @@ import { createDevServerOptions } from './vite/server'
 const host = process.env.TAURI_DEV_HOST
 const automationRoute = localAutomationRoute(host)
 
+function resolveGitSha(): string | null {
+  try {
+    return (
+      execSync('git rev-parse --short HEAD', { cwd: __dirname, encoding: 'utf8' }).trim() || null
+    )
+  } catch {
+    return null
+  }
+}
+
 export default defineConfig(async ({ command, mode }) => {
   // `--mode cloud` builds what a Cloud server serves on its own address: the editor and the
   // server's own pages (`cloud.html`).
@@ -52,6 +63,7 @@ export default defineConfig(async ({ command, mode }) => {
     },
     define: {
       __OPENPENCIL_APP_VERSION__: JSON.stringify(packageJson.version),
+      __OPENPENCIL_GIT_SHA__: JSON.stringify(resolveGitSha()),
       __OPENPENCIL_CLOUD_SITE__: JSON.stringify(cloudSite),
       ...donationDefine(__dirname),
       __OPENPENCIL_OFFICIAL_CLOUD_URL__: JSON.stringify(

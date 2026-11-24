@@ -70,6 +70,7 @@ export function appSourceConfig(): AppSourceConfig {
     ],
     define: {
       __OPENPENCIL_APP_VERSION__: JSON.stringify(rootManifest.version),
+      __OPENPENCIL_GIT_SHA__: JSON.stringify(null),
       ...donationDefine(REPO_ROOT),
       __OPENPENCIL_LOCAL_AUTOMATION_TOKEN__: JSON.stringify(''),
       __OPENPENCIL_LOCAL_AUTOMATION_URL__: JSON.stringify(''),

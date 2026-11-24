@@ -5,6 +5,7 @@ import { computed, useTemplateRef, watch } from 'vue'
 
 import { useI18n } from '@open-pencil/vue/i18n'
 
+import { BUILD_VERSION } from '@/app/runtime/version'
 import { animationsEnabled } from '@/app/shell/motion'
 import { openNewFileTab, useTabsStore } from '@/app/tabs'
 import { DOCUMENT_KIND_ICONS } from '@/components/document/kinds'
@@ -159,5 +160,14 @@ function onClose(e: MouseEvent, tabId: string) {
         <icon-lucide-plus :class="baseStyles.newIcon()" />
       </button>
     </Tip>
+    <span data-test-id="app-version" class="ms-auto shrink-0 px-3 text-2xs text-muted select-text">
+      {{ BUILD_VERSION }}
+    </span>
+    <span
+      data-test-id="app-version"
+      class="ms-auto shrink-0 px-3 text-2xs text-muted select-text"
+    >
+      {{ BUILD_VERSION }}
+    </span>
   </TabsRoot>
 </template>
