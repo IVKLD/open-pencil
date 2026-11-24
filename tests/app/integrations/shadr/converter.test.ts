@@ -300,7 +300,7 @@ describe('Shadr Converter', () => {
     expect(offer0?.locked).toBe(false)
   })
 
-  test('correctly maps Shadr and Minecraft font variants to Silkscreen and preserves original font on round-trip', () => {
+  test('correctly maps Shadr and Minecraft font variants to Pixelify Sans and preserves original font on round-trip', () => {
     const fixturePath = resolve(process.cwd(), 'docs/shadr/pages/stupidcli.json')
     const raw = readFileSync(fixturePath, 'utf-8')
     const page: ShadrPage = JSON.parse(raw)
@@ -310,8 +310,8 @@ describe('Shadr Converter', () => {
     const screenFrame = graph.getChildren(pages[0].id)[0]
     const textNode = graph.getChildren(screenFrame.id).find((n) => n.text === 'stupidcli')
 
-    // Resolves to unified Minecraft font (Silkscreen) with semibold weight
-    expect(textNode?.fontFamily).toBe('Silkscreen')
+    // Resolves to unified Minecraft font (Pixelify Sans) with semibold weight
+    expect(textNode?.fontFamily).toBe('Pixelify Sans')
     // Weight should be inferred as 600 from 'shadr_sharp_semibold'
     expect(textNode?.fontWeight).toBe(600)
 

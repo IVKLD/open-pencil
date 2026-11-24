@@ -239,12 +239,14 @@ export function resolveElementRounding(elem: ShadrElement): number | undefined {
   return undefined
 }
 
+const MINECRAFT_FONT_FAMILY = 'Pixelify Sans'
+
 function resolveShadrFont(fontName: string | undefined): {
   fontFamily: string
   fontWeight?: number
 } {
   if (!fontName) {
-    return { fontFamily: 'Silkscreen' }
+    return { fontFamily: MINECRAFT_FONT_FAMILY }
   }
 
   const name = fontName.toLowerCase()
@@ -253,14 +255,14 @@ function resolveShadrFont(fontName: string | undefined): {
 
   if (name.startsWith('minecraft') || name === 'default') {
     return {
-      fontFamily: 'Silkscreen',
+      fontFamily: MINECRAFT_FONT_FAMILY,
       fontWeight: isSemibold ? 700 : 400
     }
   }
 
   if (name.startsWith('shadr')) {
     return {
-      fontFamily: 'Silkscreen',
+      fontFamily: MINECRAFT_FONT_FAMILY,
       fontWeight: isSemibold ? 600 : 400
     }
   }

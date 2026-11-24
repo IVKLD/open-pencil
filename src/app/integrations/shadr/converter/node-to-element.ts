@@ -354,7 +354,7 @@ function resolveExportFont(node: SceneNode, customFont?: string): string | undef
   if (customFont && customFont.startsWith('shadr')) {
     return customFont
   }
-  if (node.fontFamily === 'Silkscreen') {
+  if (node.fontFamily === 'Pixelify Sans' || node.fontFamily === 'Silkscreen') {
     if (customFont && customFont !== 'minecraft:default' && customFont !== 'default') {
       return customFont
     }
