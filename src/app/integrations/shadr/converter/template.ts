@@ -79,6 +79,16 @@ export function interpolateElement(
     }
   }
 
+  if (cloned.rounding) {
+    const nextSize = cloned.rounding.size ? interpolateVal(cloned.rounding.size, params) : undefined
+    cloned.rounding = {
+      ...cloned.rounding,
+      ...(nextSize !== undefined
+        ? { size: typeof nextSize === 'boolean' ? String(nextSize) : String(nextSize) }
+        : {})
+    }
+  }
+
   if (cloned.onClickAction) {
     cloned.onClickAction = cloned.onClickAction.map((a) => interpolateStr(a, params))
   }

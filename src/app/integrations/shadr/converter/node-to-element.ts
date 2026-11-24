@@ -188,10 +188,26 @@ function applyTemplateColorBindings(
   }
 }
 
+function isCenteredTextAtPreviousWidth(
+  child: SceneNode,
+  tmplChild: ShadrElement,
+  actualX: number,
+  nodeData: ShadrNodeData
+): boolean {
+  if (child.type !== 'TEXT' || child.horizontalConstraint !== 'CENTER') return false
+  if (tmplChild.textAlign !== 'center') return false
+  const prevWidth = parseCoordinate(
+    nodeData.componentParams?.width as string | number | undefined,
+    0
+  )
+  return prevWidth > 0 && Math.abs(actualX - Math.round(prevWidth / 2)) <= 2
+}
+
 function hasChildLayoutOverrides(
   node: SceneNode,
   templateBlock: ShadrElement,
-  graph: SceneGraph
+  graph: SceneGraph,
+  nodeData: ShadrNodeData
 ): boolean {
   const children = graph.getChildren(node.id)
   const tmplChildren = templateBlock.children ?? []
@@ -206,7 +222,10 @@ function hasChildLayoutOverrides(
     const expectedX = Math.max(0, Math.round(parseCoordinate(tmplChild.position?.x, 0)))
     const expectedY = Math.max(0, Math.round(parseCoordinate(tmplChild.position?.y, 0)))
     const actual = getEffectiveChildPosition(child, tmplChild)
-    if (Math.abs(actual.x - expectedX) > 2 || Math.abs(actual.y - expectedY) > 2) {
+    const xMoved =
+      Math.abs(actual.x - expectedX) > 2 &&
+      !isCenteredTextAtPreviousWidth(child, tmplChild, actual.x, nodeData)
+    if (xMoved || Math.abs(actual.y - expectedY) > 2) {
       return true
     }
 
@@ -269,7 +288,7 @@ function shouldDetachComponent(
   }
 
   if (hasInteractionOverrides(data, expanded)) return true
-  if (node.type !== 'TEXT' && hasChildLayoutOverrides(node, expanded, graph)) return true
+  if (node.type !== 'TEXT' && hasChildLayoutOverrides(node, expanded, graph, data)) return true
   return false
 }
 

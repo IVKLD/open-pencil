@@ -11,6 +11,7 @@ import {
   paramPlaceholder,
   shadrConverter
 } from '@/app/integrations/shadr/converter'
+import { getShadrData } from '@/app/integrations/shadr/data'
 import type { ShadrComponent, ShadrPage } from '@/app/integrations/shadr/types'
 
 describe('Shadr Component Converter', () => {
@@ -297,5 +298,73 @@ describe('Shadr Component Converter', () => {
 
     // Loose node must have been reparented into rootFrame
     expect(graph.getChildren(rootFrame.id).map((c) => c.id)).toContain(looseInstance?.id ?? '')
+  })
+
+  test('interpolates rounding.size and keeps resized button as component without detaching centered label', () => {
+    const buttonComp: ShadrComponent = {
+      params: {
+        id: 'button',
+        label: 'Button',
+        width: 180,
+        height: 44,
+        rounding: 'small'
+      },
+      blocks: [
+        {
+          type: 'block_rounded',
+          id: paramPlaceholder('id'),
+          color: '4cc9f0',
+          position: { x: 0, y: 0 },
+          size: { width: paramPlaceholder('width'), height: paramPlaceholder('height') },
+          rounding: { size: paramPlaceholder('rounding') },
+          children: [
+            {
+              type: 'text',
+              id: `${paramPlaceholder('id')}_label`,
+              color: '08080b',
+              position: { x: `${paramPlaceholder('width')} / 2`, y: 12 },
+              size: { width: 64, height: 64 },
+              text: paramPlaceholder('label'),
+              textAlign: 'center'
+            }
+          ]
+        }
+      ]
+    }
+    componentRegistry.set('button', buttonComp)
+
+    const page: ShadrPage = {
+      name: 'resize_btn_page',
+      screen: { width: 1920, height: 1080 },
+      blocks: [
+        {
+          type: 'component',
+          id: 'btn_ok',
+          component: 'button',
+          position: { x: 100, y: 100 }
+        }
+      ]
+    }
+
+    const graph = shadrConverter.importPage(page)
+    const pageNode = graph.getPages()[0]
+    const rootFrame = graph.getChildren(pageNode.id)[0]
+    const btnNode = graph.getChildren(rootFrame.id)[0]
+
+    // Interpolated rounding.size should be 'small', not '${rounding}'
+    const shadrData = getShadrData(btnNode, graph)
+    expect(shadrData.rawRounding?.size).toBe('small')
+
+    // Resize button width without re-centering child label
+    graph.updateNode(btnNode.id, { width: 118 })
+
+    const mockEditor = asDouble<EditorStore>({
+      graph,
+      state: { currentPageId: pageNode.id }
+    })
+    const exported = shadrConverter.exportPage(mockEditor, 'resize_btn_page')
+    const exportedBtn = exported.blocks.find((b) => b.id === 'btn_ok')
+    expect(exportedBtn?.type).toBe('component')
+    expect(exportedBtn?.params?.width).toBe(118)
   })
 })
