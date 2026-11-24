@@ -136,7 +136,16 @@ function restoreAssemblyState(
   const { graph, checkpoint } = resume
   const components = new Map<string, MaterializedComponentOccurrence>()
   for (const [id, entry] of checkpoint.components) {
-    components.set(id, restoreComponentCheckpoint(graph, reader.readComponent(id, options), entry))
+    if (!graph.getNode(entry.rootId)) continue
+    try {
+      components.set(
+        id,
+        restoreComponentCheckpoint(graph, reader.readComponent(id, options), entry)
+      )
+      // oxlint-disable-next-line open-pencil/no-silent-catch
+    } catch {
+      // Ignore stale component checkpoint entries that cannot be reconciled
+    }
   }
   return {
     graph,

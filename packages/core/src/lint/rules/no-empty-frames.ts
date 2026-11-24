@@ -9,7 +9,7 @@ export default defineRule({
   check(node, context) {
     if (context.getChildren(node).length > 0) return
     const isSpacer =
-      node.name.toLowerCase().includes('spacer') || node.width <= 1 || node.height <= 1
+      node.name?.toLowerCase().includes('spacer') || node.width <= 1 || node.height <= 1
     const hasFill = node.fills.some((f) => f.visible && f.type === 'SOLID')
     if (!isSpacer && !hasFill)
       context.report({

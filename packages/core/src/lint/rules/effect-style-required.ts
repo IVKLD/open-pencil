@@ -7,7 +7,7 @@ export default defineRule({
     description: 'Effects should use shared effect presets or tokens'
   },
   check(node, context) {
-    const visibleEffects = node.effects.filter((effect) => effect.visible)
+    const visibleEffects = node.effects?.filter((effect) => effect.visible) ?? []
     if (visibleEffects.length === 0) return
     context.report({
       node,

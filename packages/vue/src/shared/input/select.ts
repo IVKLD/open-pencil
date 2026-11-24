@@ -34,9 +34,18 @@ export interface HitTestFns {
  */
 function startMarquee(cx: number, cy: number, editor: Editor, setDrag: (d: DragState) => void) {
   const selectsSection = editor.state.selectedIds.size === 0
-  editor.exitContainers()
+  const enteredId = editor.state.enteredContainerId
+  const enteredNode = enteredId ? editor.graph.getNode(enteredId) : undefined
+  const stayInEnteredGroup =
+    enteredNode?.type === 'GROUP' && editor.graph.isPointInNode(enteredNode.id, cx, cy)
+
+  if (!stayInEnteredGroup) {
+    editor.exitContainers()
+  }
   editor.clearSelection()
-  const container = editor.graph.hitTestOpenContainer(cx, cy, editor.state.currentPageId)
+  const container = stayInEnteredGroup
+    ? enteredNode
+    : editor.graph.hitTestOpenContainer(cx, cy, editor.state.currentPageId)
   setDrag({ type: 'marquee', startX: cx, startY: cy, containerId: container?.id, selectsSection })
 }
 

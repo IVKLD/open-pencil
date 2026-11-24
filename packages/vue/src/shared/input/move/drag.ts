@@ -363,6 +363,7 @@ export function handleMoveUp(d: DragMove, editor: Editor) {
     }
     // Claiming a slot records its own step; the batch makes it one undo with the reorder.
     editor.undo.runBatch('Reorder', () => {
+      restoreOriginalPositions(d, editor)
       for (const id of d.originals.keys()) {
         editor.reorderInAutoLayout(id, indicator.parentId, indicator.index)
       }

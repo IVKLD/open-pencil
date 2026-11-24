@@ -13,7 +13,7 @@ export default defineRule({
   },
   match: ['RECTANGLE', 'FRAME', 'COMPONENT', 'INSTANCE'],
   check(node, context) {
-    const radius = node.cornerRadius
+    const radius = node.cornerRadius ?? 0
     if (radius <= 0 || radius === PILL_RADIUS || SCALE.includes(radius)) return
     const pill = radius >= Math.min(node.width, node.height) / 2
     const suggested = pill ? PILL_RADIUS : nearestValue(radius, SCALE.slice(1))

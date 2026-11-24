@@ -84,6 +84,24 @@ export function useCanvasInput(
   const profile = () => resolveEditorProfile(editor.state)
   // Canvas chrome that explains layout, such as auto layout child outlines, steps aside while
   // layers move, resize, or rotate.
+  let endInteractiveDrag: (() => void) | null = null
+  watch(
+    () => drag.value !== null,
+    (isDragging) => {
+      if (isDragging) {
+        endInteractiveDrag ??= editor.beginInteractiveEdit()
+      } else if (endInteractiveDrag) {
+        endInteractiveDrag()
+        endInteractiveDrag = null
+      }
+    }
+  )
+  onScopeDispose(() => {
+    if (endInteractiveDrag) {
+      endInteractiveDrag()
+      endInteractiveDrag = null
+    }
+  })
   watch(
     () => drag.value?.type,
     (type) =>
@@ -650,6 +668,10 @@ export function useCanvasInput(
     commitAutoLayoutValueEdit: valueEdit.commit,
     cancelAutoLayoutValueEdit: valueEdit.cancel,
     cleanupInteractions() {
+      if (endInteractiveDrag) {
+        endInteractiveDrag()
+        endInteractiveDrag = null
+      }
       valueEdit.cancel()
       cancelPointerInteraction()
       pointerInside.value = false

@@ -36,4 +36,17 @@ describe('createLinter', () => {
     const result = createLinter({ preset: 'recommended' }).lintGraph(graph, [frame.id])
     expect(result.messages.some((message) => message.ruleId === 'color-contrast')).toBe(true)
   })
+
+  test('handles nodes with undefined or empty names without throwing', () => {
+    const graph = new SceneGraph()
+    const page = graph.getPages()[0]
+    const unnamedFrame = graph.createNode('FRAME', page.id, {
+      width: 100,
+      height: 100
+    } as Partial<SceneNode>)
+
+    expect(() => {
+      createLinter({ preset: 'recommended' }).lintGraph(graph, [unnamedFrame.id])
+    }).not.toThrow()
+  })
 })

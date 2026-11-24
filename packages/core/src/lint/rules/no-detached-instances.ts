@@ -19,6 +19,7 @@ export default defineRule({
   match: ['FRAME'],
   check(node, context) {
     if (
+      !node.name ||
       node.componentId ||
       !PATTERNS.some((p) => p.test(node.name)) ||
       context.getChildren(node).length === 0 ||

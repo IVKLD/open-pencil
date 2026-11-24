@@ -83,7 +83,23 @@ export default defineConfig(async ({ command, mode }) => {
       automation ? openPencilAutomationPlugin(command, host) : undefined,
       vue(),
       metrics ? metricsBrandPlugin((outDir) => resolve(outDir, '..')) : openPencilPwaPlugin(),
-      cloudSite ? cloudSitePlugin() : undefined
+      cloudSite ? cloudSitePlugin() : undefined,
+      {
+        name: 'open-pencil-rolldown-entry-fix',
+        generateBundle(_options, bundle) {
+          for (const chunk of Object.values(bundle)) {
+            if (chunk.type === 'chunk' && chunk.code.trim().length === 0) {
+              const moduleCodes = Object.values(chunk.modules)
+                .map((m: any) => m.code)
+                .filter(Boolean)
+                .join('\n')
+              if (moduleCodes.length > 0) {
+                chunk.code = moduleCodes
+              }
+            }
+          }
+        }
+      }
     ],
     clearScreen: false,
     // A Cloud server routes its own pages and falls back to the editor itself, so a development
@@ -110,10 +126,7 @@ export default defineConfig(async ({ command, mode }) => {
           ? { metrics: resolve(__dirname, 'metrics.html') }
           : cloudSite
             ? { main: resolve(__dirname, 'index.html'), cloud: resolve(__dirname, 'cloud.html') }
-            : {
-                main: resolve(__dirname, 'index.html'),
-                updater: resolve(__dirname, 'updater.html')
-              },
+            : { main: resolve(__dirname, 'index.html') },
         output: { chunkFileNames }
       }
     },

@@ -9,6 +9,24 @@ const NODE_IDENTITY_ERROR = 'Atomic tools must not change node hierarchy or iden
 const VARIABLE_IDENTITY_ERROR = 'Atomic tools must not change variable identity'
 const DOCUMENT_ERROR = 'Atomic tools must not change collections, assets or document metadata'
 
+function assertVariablesPreserved(
+  variables: ReadonlyMap<string, Variable>,
+  graph: SceneGraph,
+  variableRefs: ReadonlyMap<string, Variable>
+) {
+  for (const [id, before] of variables) {
+    const after = graph.variables.get(id)
+    if (
+      !after ||
+      after !== variableRefs.get(id) ||
+      before.id !== after.id ||
+      before.collectionId !== after.collectionId ||
+      before.type !== after.type
+    )
+      throw new Error(VARIABLE_IDENTITY_ERROR)
+  }
+}
+
 /** Capture rollback state without changing graph or surviving object identities. */
 export function captureGraphCheckpoint(graph: SceneGraph) {
   const nodeRefs = new Map(graph.nodes)
@@ -49,17 +67,7 @@ export function captureGraphCheckpoint(graph: SceneGraph) {
         throw new Error(NODE_IDENTITY_ERROR)
       }
     }
-    for (const [id, before] of snapshot.variables) {
-      const after = graph.variables.get(id)
-      if (
-        !after ||
-        after !== variableRefs.get(id) ||
-        before.id !== after.id ||
-        before.collectionId !== after.collectionId ||
-        before.type !== after.type
-      )
-        throw new Error(VARIABLE_IDENTITY_ERROR)
-    }
+    assertVariablesPreserved(snapshot.variables, graph, variableRefs)
     assertDocumentUnchanged()
   }
 
@@ -259,17 +267,7 @@ export function captureTouchedCheckpoint(graph: SceneGraph): TouchedCheckpoint {
 
   function assertPropertiesOnly() {
     assertNodes()
-    for (const [id, before] of saved.variables) {
-      const after = graph.variables.get(id)
-      if (
-        !after ||
-        after !== variableRefs.get(id) ||
-        before.id !== after.id ||
-        before.collectionId !== after.collectionId ||
-        before.type !== after.type
-      )
-        throw new Error(VARIABLE_IDENTITY_ERROR)
-    }
+    assertVariablesPreserved(saved.variables, graph, variableRefs)
     if (
       !isEqual(saved.variableCollections, graph.variableCollections) ||
       !isEqual(saved.activeMode, graph.activeMode) ||

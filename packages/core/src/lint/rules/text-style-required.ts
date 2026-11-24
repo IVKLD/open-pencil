@@ -8,8 +8,8 @@ export default defineRule({
   },
   match: ['TEXT'],
   check(node, context) {
-    if (node.text.length <= 2) return
-    if (node.boundVariables.fontSize || node.boundVariables.fontFamily) return
+    if (!node.text || node.text.length <= 2) return
+    if (node.boundVariables?.fontSize || node.boundVariables?.fontFamily) return
     // Suggesting a binding is only actionable when the document has typography values to bind.
     const { FLOAT, STRING } = context.variables.counts
     if (FLOAT === 0 && STRING === 0) return

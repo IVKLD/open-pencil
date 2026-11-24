@@ -1,69 +1,105 @@
-import type { ShadrComponent, ShadrElement } from '../types'
-import { BUILTIN_COMPONENTS } from './builtin-templates'
+import type { ShadrComponent, ShadrElement, ShadrParamValue } from '../types'
 
-export class ComponentRegistry {
-  readonly #templates = new Map<string, ShadrComponent>()
+/** Global registry of loaded Shadr component templates */
+export const componentRegistry = new Map<string, ShadrComponent>()
 
-  constructor() {
-    this.resetToDefaults()
-  }
-
-  resetToDefaults(): void {
-    this.#templates.clear()
-    for (const [key, comp] of Object.entries(BUILTIN_COMPONENTS)) {
-      this.#templates.set(key, comp)
-    }
-  }
-
-  get(name: string): ShadrComponent | undefined {
-    return this.#templates.get(name)
-  }
-
-  set(name: string, template: ShadrComponent): void {
-    this.#templates.set(name, template)
-  }
-
-  has(name: string): boolean {
-    return this.#templates.has(name)
-  }
-
-  list(): string[] {
-    return Array.from(this.#templates.keys())
-  }
+function interpolateStr(str: string, params: Record<string, ShadrParamValue>): string {
+  return str.replace(/\$\{([a-zA-Z0-9_]+)\}/g, (_, key) => {
+    const pVal = params[key]
+    return pVal !== undefined ? String(pVal) : '${' + key + '}'
+  })
 }
 
-export const componentRegistry = new ComponentRegistry()
-
-function interpolateValue(val: unknown, params: Record<string, unknown>): unknown {
-  if (typeof val === 'string') {
-    const singleMatch = val.match(/^\$\{([a-zA-Z0-9_]+)\}$/)
-    if (singleMatch) {
-      const key = singleMatch[1]
-      if (params[key] !== undefined) return params[key]
-    }
-    return val.replace(/\$\{([a-zA-Z0-9_]+)\}/g, (_, key) => {
-      const pVal = params[key]
-      return pVal !== undefined ? String(pVal) : `\${${key}}`
-    })
+function interpolateVal(
+  val: string | number | boolean,
+  params: Record<string, ShadrParamValue>
+): string | number | boolean {
+  if (typeof val !== 'string') return val
+  const singleMatch = val.match(/^\$\{([a-zA-Z0-9_]+)\}$/)
+  if (singleMatch) {
+    const pVal = params[singleMatch[1]]
+    if (pVal !== undefined) return pVal
   }
-  if (Array.isArray(val)) {
-    return val.map((item) => interpolateValue(item, params))
-  }
-  if (val && typeof val === 'object') {
-    const res: Record<string, unknown> = {}
-    for (const [k, v] of Object.entries(val)) {
-      res[k] = interpolateValue(v, params)
-    }
-    return res
-  }
-  return val
+  return interpolateStr(val, params)
 }
 
+function interpolateCoord(
+  val: string | number,
+  params: Record<string, ShadrParamValue>
+): string | number {
+  if (typeof val !== 'string') return val
+  let res: string | number | boolean = interpolateVal(val, params)
+  if (typeof res === 'string') {
+    for (const [key, pVal] of Object.entries(params)) {
+      if (typeof pVal === 'number' || typeof pVal === 'string') {
+        const escaped = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+        res = res.replace(new RegExp(`\\b${escaped}\\b`, 'g'), String(pVal))
+      }
+    }
+  }
+  return typeof res === 'boolean' ? String(res) : res
+}
+
+const TEXT_PROPS = ['id', 'text', 'image', 'font', 'textColor', 'placeholder'] as const
+
+/** Interpolates parameters into a concrete ShadrElement */
 export function interpolateElement(
   elem: ShadrElement,
-  params: Record<string, unknown>
+  params: Record<string, ShadrParamValue>
 ): ShadrElement {
-  return interpolateValue(elem, params) as ShadrElement
+  const cloned: ShadrElement = { ...elem }
+
+  for (const prop of TEXT_PROPS) {
+    const str = cloned[prop]
+    if (str) cloned[prop] = interpolateStr(str, params)
+  }
+
+  if (typeof cloned.color === 'string') {
+    cloned.color = interpolateStr(cloned.color, params)
+  }
+
+  if (cloned.position) {
+    cloned.position = {
+      x: interpolateCoord(cloned.position.x, params),
+      y: interpolateCoord(cloned.position.y, params)
+    }
+  }
+
+  if (cloned.size) {
+    cloned.size = {
+      width: interpolateCoord(cloned.size.width, params),
+      height: interpolateCoord(cloned.size.height, params)
+    }
+  }
+
+  if (cloned.outline) {
+    cloned.outline = {
+      size: cloned.outline.size,
+      color: interpolateStr(cloned.outline.color, params)
+    }
+  }
+
+  if (cloned.onClickAction) {
+    cloned.onClickAction = cloned.onClickAction.map((a) => interpolateStr(a, params))
+  }
+
+  if (cloned.onSubmitAction) {
+    cloned.onSubmitAction = cloned.onSubmitAction.map((a) => interpolateStr(a, params))
+  }
+
+  if (cloned.children) {
+    cloned.children = cloned.children.map((c) => interpolateElement(c, params))
+  }
+
+  if (cloned.params) {
+    const nextParams: Record<string, ShadrParamValue> = {}
+    for (const [k, v] of Object.entries(cloned.params)) {
+      nextParams[k] = interpolateVal(v, params)
+    }
+    cloned.params = nextParams
+  }
+
+  return cloned
 }
 
 /** Expands a component instance element into concrete Shadr element tree using its template */
@@ -72,13 +108,13 @@ export function expandComponent(elem: ShadrElement): ShadrElement | null {
   const template = componentRegistry.get(elem.component)
   if (!template || !template.blocks || template.blocks.length === 0) return null
 
-  const compParams: Record<string, unknown> = {
-    ...(template.params ?? {}),
-    ...(elem.params ?? {}),
+  const compParams: Record<string, ShadrParamValue> = {
+    ...template.params,
+    ...elem.params,
     id: elem.params?.id || elem.id
   }
 
-  const rootBlock = template.blocks[0]
+  const rootBlock = template.blocks.find((b) => !b.id?.includes('scrim')) ?? template.blocks[0]
   const expanded = interpolateElement(rootBlock, compParams)
 
   expanded.component = elem.component

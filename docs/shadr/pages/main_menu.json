@@ -69,7 +69,8 @@
                 "height": 54
             },
             "text": "server-side interfaces, no client mod",
-            "textAlign": "center"
+            "textAlign": "center",
+            "lineWidth": 800
         },
         {
             "type": "grid_block",

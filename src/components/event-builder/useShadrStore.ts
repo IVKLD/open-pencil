@@ -8,20 +8,23 @@ import {
   selectedComponentId,
   selectedPageId,
   serverComponents,
+  serverHost,
   serverPages,
-  serverUrl,
+  serverURL,
   status,
   token
 } from '@/app/integrations/shadr/store/state'
 
-import { componentService } from './services/component.service'
-import { checkConnection, saveCredentials } from './services/connection.service'
+import { checkConnection, saveUserKey } from './services/connection.service'
+import { sceneCreatorService } from './services/scene-creator.service'
 import {
-  createScene,
+  getChangedScenes,
+  insertComponentInstance,
   pullComponent,
   pullComponents,
   pullPage,
   pullProject,
+  pushChangedScenes,
   pushCurrentComponent,
   pushCurrentPage,
   pushProject,
@@ -30,7 +33,8 @@ import {
 
 export function useShadrStore() {
   return {
-    serverUrl,
+    serverURL,
+    serverHost,
     token,
     status,
     isOnline,
@@ -43,17 +47,19 @@ export function useShadrStore() {
     currentDocumentType,
     currentDocumentId,
     lastError,
-    saveCredentials,
+    saveUserKey,
     checkConnection,
     pullProject,
     pullComponents,
     pushProject,
     switchScene,
-    createScene,
+    createScene: sceneCreatorService.createScene,
     pullPage,
     pushCurrentPage,
+    pushChangedScenes,
+    getChangedScenes,
     pullComponent,
     pushCurrentComponent,
-    insertComponentInstance: componentService.insertComponentInstance
+    insertComponentInstance
   }
 }

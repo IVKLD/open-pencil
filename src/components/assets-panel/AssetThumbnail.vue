@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useElementVisibility, useObjectUrl } from '@vueuse/core'
+import { debouncedWatch, useElementVisibility, useObjectUrl } from '@vueuse/core'
 import { computed, shallowRef, useTemplateRef, watch } from 'vue'
 
 import { useEditorStore } from '@/app/editor/active-store'
@@ -45,11 +45,19 @@ async function updatePreview() {
 }
 
 watch(
-  () => [nodeId, size, editor.state.sceneVersion, isVisible.value],
-  ([, , , visible]) => {
-    if (visible) void updatePreview()
+  [() => nodeId, () => size, isVisible],
+  ([, , visible]) => {
+    if (visible && !previewBlob.value) void updatePreview()
   },
   { immediate: true, flush: 'post' }
+)
+
+debouncedWatch(
+  () => editor.state.sceneVersion,
+  () => {
+    if (isVisible.value) void updatePreview()
+  },
+  { debounce: 350, flush: 'post' }
 )
 </script>
 

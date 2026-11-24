@@ -40,7 +40,7 @@ export function createDevServerOptions(
   host: string | undefined,
   rootDir: string,
   hmrURL?: string,
-  shadrApiUrl?: string
+  shadrAPIURL?: string
 ): ServerOptions {
   return {
     port: 1420,
@@ -50,19 +50,22 @@ export function createDevServerOptions(
     // Vite forwards browser logs to the terminal when an agent starts it. Vue warnings carry the
     // component's props, and serializing the editor state behind them freezes the tab, so only
     // errors are forwarded.
-    proxy: shadrApiUrl
+    proxy: shadrAPIURL
       ? {
           '/api/shadr': {
-            target: shadrApiUrl,
+            target: shadrAPIURL,
             changeOrigin: true,
             secure: false,
             rewrite: (p) => p.replace(/^\/api\/shadr/, '')
           }
         }
       : undefined,
-    watch: {
-      // Ignore nested checkouts, not an active checkout whose own path contains .worktrees.
-      ignored: [...WATCH_IGNORED, `${normalizePath(resolve(rootDir, '.worktrees'))}/**`]
-    }
+    watch:
+      process.env.VITE_WATCH === 'false'
+        ? null
+        : {
+            // Ignore nested checkouts, not an active checkout whose own path contains .worktrees.
+            ignored: [...WATCH_IGNORED, `${normalizePath(resolve(rootDir, '.worktrees'))}/**`]
+          }
   }
 }

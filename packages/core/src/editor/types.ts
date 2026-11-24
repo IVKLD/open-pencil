@@ -147,6 +147,8 @@ export interface EditorViewState {
   hoveredNodeId: string | null
   /** A pointer move, resize, or rotation is in progress. */
   transforming: boolean
+  /** Disables interactive rotation handles and rotation gestures. */
+  lockRotation?: boolean
   measurementMode: MeasurementMode
   editingTextId: string | null
   /** The layer whose name a field over the canvas renames; the canvas leaves its title to the field. */

@@ -7,18 +7,21 @@ describe('Cookie Storage', () => {
     // Mock document.cookie in test runtime if needed
     if (typeof document === 'undefined') {
       const store: Record<string, string> = {}
-      globalThis.document = {
-        get cookie() {
-          return Object.entries(store)
-            .map(([k, v]) => `${k}=${v}`)
-            .join('; ')
+      Object.defineProperty(globalThis, 'document', {
+        value: {
+          get cookie() {
+            return Object.entries(store)
+              .map(([k, v]) => `${k}=${v}`)
+              .join('; ')
+          },
+          set cookie(val: string) {
+            const [pair] = val.split(';')
+            const [k, v] = pair.split('=')
+            store[k.trim()] = v.trim()
+          }
         },
-        set cookie(val: string) {
-          const [pair] = val.split(';')
-          const [k, v] = pair.split('=')
-          store[k.trim()] = v.trim()
-        }
-      } as unknown as Document
+        configurable: true
+      })
     }
 
     setCookie('shadr_token', 'test_secret_token_123')

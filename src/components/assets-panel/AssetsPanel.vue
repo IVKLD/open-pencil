@@ -16,11 +16,14 @@ import { createDefaultNode } from '@open-pencil/scene-graph/node-defaults'
 import { useI18n } from '@open-pencil/vue/i18n'
 
 import { useEditorStore } from '@/app/editor/active-store'
-import { autoLoadShadrComponents } from '@/app/integrations/shadr/auto-load'
 import { useLibraryService } from '@/app/libraries'
 import { openExternalLink } from '@/app/shell/ui'
 import AssetThumbnail from '@/components/assets-panel/AssetThumbnail.vue'
 import { findAssetPage } from '@/components/assets-panel/page'
+import {
+  isComponentsLoading,
+  pullComponents
+} from '@/components/event-builder/services/sync.service'
 import { nodeIcon } from '@/components/icons'
 import LibraryManagerDialog from '@/components/libraries/LibraryManagerDialog.vue'
 import { useLibraryEntry } from '@/components/libraries/useLibraryEntry'
@@ -216,15 +219,7 @@ watch(selectedAsset, (asset) => {
 
 onMounted(() => {
   void libraryService.refresh(editor)
-  void autoLoadShadrComponents(editor)
 })
-
-watch(
-  () => editor.state.currentPageId,
-  () => {
-    void autoLoadShadrComponents(editor)
-  }
-)
 
 function clearPreview() {
   previewBlob.value = null
@@ -306,16 +301,32 @@ async function resolveAssetComponent(asset: LocalAsset): Promise<string | null> 
   }
 }
 
+function defaultContainerParent(): string {
+  if (editor.state.enteredContainerId) return editor.state.enteredContainerId
+
+  for (const id of editor.state.selectedIds) {
+    const node = editor.graph.getNode(id)
+    if (node && (node.type === 'FRAME' || node.type === 'SECTION')) {
+      return node.id
+    }
+  }
+
+  const topNodes = editor.graph.getChildren(editor.state.currentPageId)
+  const sceneFrame = topNodes.find((n) => n.type === 'FRAME')
+  if (sceneFrame) {
+    return sceneFrame.id
+  }
+
+  return editor.state.currentPageId
+}
+
 async function insertAsset(asset: LocalAsset) {
   const componentId = await resolveAssetComponent(asset)
   if (!componentId) return
   const component = editor.graph.getNode(componentId)
   if (!component) return
-  const parentId = cycleSafeParent(
-    editor.graph,
-    editor.state.enteredContainerId ?? editor.state.currentPageId,
-    [componentId]
-  )
+  const rawParentId = defaultContainerParent()
+  const parentId = cycleSafeParent(editor.graph, rawParentId, [componentId])
   const point = insertionPoint(component, parentId)
   editor.createInstanceFromComponent(componentId, point.x, point.y, parentId)
   editor.requestRender()
@@ -517,8 +528,33 @@ async function insertSelectedAsset() {
         </div>
       </section>
 
+      <!-- Loader State when fetching components -->
       <div
-        v-if="filteredAssets.length === 0"
+        v-if="isComponentsLoading && filteredAssets.length === 0"
+        class="flex flex-col gap-3 p-3"
+      >
+        <div class="flex items-center justify-center gap-2 py-3 text-center">
+          <icon-lucide-loader-2
+            class="size-4 animate-spin text-primary motion-reduce:animate-none"
+          />
+          <span class="text-2xs text-muted font-medium">Загрузка компонентов из Shadr...</span>
+        </div>
+        <!-- Skeleton grid preview -->
+        <div class="grid grid-cols-2 gap-2">
+          <div
+            v-for="i in 4"
+            :key="i"
+            class="flex flex-col gap-1.5 p-2 rounded-lg border border-border/40 bg-panel-secondary/30 animate-pulse"
+          >
+            <div class="h-16 rounded bg-panel-field/70" />
+            <div class="h-2.5 w-3/4 rounded bg-panel-field/60" />
+            <div class="h-2 w-1/2 rounded bg-panel-field/40" />
+          </div>
+        </div>
+      </div>
+
+      <div
+        v-else-if="filteredAssets.length === 0"
         class="flex flex-col items-center justify-center p-4 text-center"
       >
         <AppPlaceholder
@@ -530,14 +566,16 @@ async function insertSelectedAsset() {
             <icon-lucide-component class="size-4" />
           </template>
         </AppPlaceholder>
+
         <AppButton
           size="xs"
           variant="outline"
-          class="mt-3 border border-border text-xs"
-          @click="autoLoadShadrComponents(editor)"
+          class="mt-3 cursor-pointer text-xs"
+          :loading="isComponentsLoading"
+          @click="void pullComponents(editor)"
         >
-          <icon-lucide-refresh-cw class="size-3 mr-1.5" />
-          Синхронизировать компоненты Shadr
+          <icon-lucide-boxes class="size-3.5 mr-1.5 text-primary" />
+          Подгрузить из Shadr
         </AppButton>
       </div>
     </div>

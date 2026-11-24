@@ -35,7 +35,7 @@ export default defineRule({
         const paint = paints[i]
         if (paint.type !== 'SOLID' || !paint.visible || !paint.color) continue
         // Check indexed binding (e.g. "fills/0/color") — the format the renderer actually reads
-        if (node.boundVariables[`${field}/${i}/color`]) continue
+        if (node.boundVariables?.[`${field}/${i}/color`]) continue
         // Only a color with an exact variable match has an obvious fix: bind that variable.
         const color = colorToHex({ ...paint.color, a: 1 })
         const variable = colorsByHex.get(color)

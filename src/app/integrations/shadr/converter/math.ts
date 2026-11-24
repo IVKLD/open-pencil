@@ -34,7 +34,11 @@ export function safeEvalArithmetic(input: string): number | null {
     while (pos < str.length && (str[pos] === '*' || str[pos] === '/')) {
       const op = str[pos++]
       const next = parseFactor()
-      val = op === '*' ? val * next : next !== 0 ? val / next : 0
+      if (op === '*') {
+        val *= next
+      } else {
+        val = next !== 0 ? val / next : 0
+      }
     }
     return val
   }
@@ -65,8 +69,6 @@ export function parseCoordinate(val: number | string | undefined, defaultValue =
   const normalized = String(val)
     .replace(/halfWidth/gi, '960')
     .replace(/halfHeight/gi, '540')
-    .replace(/1920\/2/g, '960')
-    .replace(/1080\/2/g, '540')
 
   if (/^[\d\s.+\-*/()]+$/.test(normalized)) {
     const evaluated = safeEvalArithmetic(normalized)
@@ -78,4 +80,3 @@ export function parseCoordinate(val: number | string | undefined, defaultValue =
   const num = Number(val)
   return Number.isFinite(num) ? num : defaultValue
 }
-

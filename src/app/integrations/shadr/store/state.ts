@@ -4,17 +4,27 @@ import { getCookie } from './cookie'
 
 export type ConnectionStatus = 'idle' | 'connecting' | 'online' | 'offline'
 
-export const COOKIE_KEY_TOKEN = 'shadr_token'
-export const STORAGE_KEY_URL = 'shadr_server_url'
+export const COOKIE_KEY_TOKEN = 'shadr_user_key'
 
-const ENV_URL = import.meta.env?.VITE_SHADR_API_URL || ''
-const ENV_TOKEN = import.meta.env?.VITE_SHADR_TOKEN || ''
+// Server IP / Domain is strictly taken from environment variables
+const ENV_URL =
+  import.meta.env?.VITE_SHADR_API_URL ||
+  import.meta.env?.VITE_SHADR_URL ||
+  'http://localhost:8128/api/v1'
 
-export const serverUrl = ref(
-  (typeof localStorage !== 'undefined' && localStorage.getItem(STORAGE_KEY_URL)) || ENV_URL
-)
+export const serverURL = ref(ENV_URL)
 
-export const token = ref(getCookie(COOKIE_KEY_TOKEN) || ENV_TOKEN)
+export const serverHost = computed(() => {
+  try {
+    const parsed = new URL(serverURL.value)
+    return parsed.host || parsed.hostname
+  } catch {
+    return serverURL.value.replace(/^https?:\/\//, '').split('/')[0] || 'shadr-server'
+  }
+})
+
+// Security key is accepted from user (stored in session cookie)
+export const token = ref(getCookie(COOKIE_KEY_TOKEN) || '')
 
 export const status = ref<ConnectionStatus>('idle')
 export const isOnline = computed(() => status.value === 'online')

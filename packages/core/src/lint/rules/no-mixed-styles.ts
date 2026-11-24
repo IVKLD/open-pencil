@@ -8,7 +8,7 @@ export default defineRule({
   },
   match: ['TEXT'],
   check(node, context) {
-    if (node.text.length > 1 && node.styleRunCount > 0) {
+    if (node.text && node.text.length > 1 && (node.styleRunCount ?? 0) > 0) {
       context.report({
         node,
         message: 'Text layer has mixed font styles',

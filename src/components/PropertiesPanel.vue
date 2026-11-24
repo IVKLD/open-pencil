@@ -12,6 +12,7 @@ import { useEditorStore } from '@/app/editor/active-store'
 import { countIssues } from '@/app/editor/design-check/issues'
 import ChatPanel from '@/components/chat/ChatPanel.vue'
 import { CloudVersionHistory } from '@/components/cloud/integration'
+import Tip from '@/components/ui/overlay/Tip.vue'
 import propertiesTabsTheme from '@/theme/panel/properties-tabs'
 
 import CodePanel from './CodePanel.vue'
@@ -48,6 +49,8 @@ const problemCount = computed(() => {
   const counts = countIssues(snapshot.issues)
   return { total: counts.error + counts.warning, severity: counts.error > 0 ? 'error' : 'warning' }
 })
+
+const shadrTabTip = 'Панель Shadr: свойства блоков, интерактивность, параметры и цепочки действий'
 </script>
 
 <template>
@@ -76,12 +79,12 @@ const problemCount = computed(() => {
           <icon-lucide-code :class="tabStyles.icon()" aria-hidden="true" />
           <span :class="tabStyles.label()">{{ panels.code }}</span>
         </TabsTrigger>
-        
+
         <TabsTrigger value="ai" data-test-id="properties-tab-ai" :class="tabStyles.trigger()">
           <icon-lucide-sparkles :class="tabStyles.icon()" aria-hidden="true" />
           <span :class="tabStyles.label()">{{ panels.ai }}</span>
         </TabsTrigger>
-        
+
         <TabsTrigger
           v-if="lints"
           value="lint"
@@ -101,12 +104,18 @@ const problemCount = computed(() => {
           />
           <span :class="tabStyles.label()">{{ checkMessages.tab }}</span>
         </TabsTrigger>
-        
-        <TabsTrigger value="event_builder" data-test-id="properties-tab-event-builder" :class="tabStyles.trigger()">
-          <icon-lucide-gamepad-2 :class="tabStyles.icon()" aria-hidden="true" />
-          <span :class="tabStyles.label()">shadr</span>
-        </TabsTrigger>
-        
+
+        <Tip :label="shadrTabTip" side="bottom" as-child>
+          <TabsTrigger
+            value="event_builder"
+            data-test-id="properties-tab-event-builder"
+            :class="tabStyles.trigger()"
+          >
+            <icon-lucide-gamepad-2 :class="tabStyles.icon()" aria-hidden="true" />
+            <span :class="tabStyles.label()">shadr</span>
+          </TabsTrigger>
+        </Tip>
+
         <ZoomDropdown v-if="activeTab === 'design'" />
       </TabsList>
 

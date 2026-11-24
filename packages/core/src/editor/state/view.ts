@@ -14,6 +14,7 @@ export function createDefaultEditorViewState(pageId: string): EditorViewState {
     layoutInsertIndicator: null,
     hoveredNodeId: null,
     transforming: false,
+    lockRotation: false,
     measurementMode: 'off',
     editingTextId: null,
     renamingLabelId: null,

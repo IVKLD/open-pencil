@@ -198,10 +198,10 @@ export function automationPlugin(
     const socketPath = platformHasUnixSockets() ? join(runtimeDir, 'mcp.sock') : null
     const discoveryPath = join(runtimeDir, 'mcp.json')
     if (socketPath) {
-      await rm(socketPath, { force: true }).catch(() => {})
+      await rm(socketPath, { force: true }).catch(() => undefined)
     }
-    await rm(discoveryPath, { force: true }).catch(() => {})
-    const bunBin = (process.execPath && process.execPath.includes('bun')) ? process.execPath : 'bun'
+    await rm(discoveryPath, { force: true }).catch(() => undefined)
+    const bunBin = process.execPath && process.execPath.includes('bun') ? process.execPath : 'bun'
     const command = [bunBin, 'run', 'packages/mcp/src/index.ts']
     const spawnCommand = options.portlessServiceName ? 'portless' : command[0]
     const spawnArgs = options.portlessServiceName
@@ -303,6 +303,9 @@ export function automationPlugin(
         })()
       })
       await enqueue(startChild)
+      process.once('exit', () => {
+        child?.kill('SIGKILL')
+      })
     },
     async buildEnd() {
       await enqueue(stopChild)

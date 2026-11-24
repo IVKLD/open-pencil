@@ -303,6 +303,14 @@ function parseAutomationHealth(value: unknown): AutomationHealth | null {
 export async function readAutomationHealth(
   authToken: string | null = runtimeAutomationAuthToken
 ): Promise<AutomationHealth | null> {
+  if (
+    typeof window !== 'undefined' &&
+    window.location.protocol === 'https:' &&
+    window.location.hostname !== 'localhost' &&
+    !window.location.hostname.endsWith('.localhost')
+  ) {
+    return null
+  }
   try {
     const headers = authToken ? { Authorization: `Bearer ${authToken}` } : undefined
     const res = await fetch(`${DEV_AUTOMATION_HTTP_URL}/health`, {

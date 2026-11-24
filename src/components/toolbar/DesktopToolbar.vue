@@ -11,6 +11,7 @@ import { toolbarToolTestId } from '@open-pencil/vue/testing'
 
 import type { ToolbarAction, ToolbarItem as ToolbarLayoutItem } from '@/app/editor/toolbar/layout'
 import { toolTip } from '@/app/editor/toolbar/shortcuts'
+import ShadrToolbarButton from '@/components/toolbar/ShadrToolbarButton.vue'
 import ShapeToolButton from '@/components/toolbar/ShapeToolButton.vue'
 import ToolButton from '@/components/toolbar/ToolButton.vue'
 import ToolFlyout from '@/components/toolbar/ToolFlyout.vue'
@@ -90,6 +91,9 @@ defineSlots<{
           </Tip>
         </ToolbarItem>
       </template>
+
+      <div class="mx-0.5 my-1 w-px bg-border/60" aria-hidden="true" />
+      <ShadrToolbarButton :ui="ui" />
     </ToolbarRoot>
     <slot name="hidden" />
   </div>

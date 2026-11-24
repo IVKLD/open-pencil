@@ -118,6 +118,7 @@ export function renderFromEditorState(
       showPixelGrid: showsPixelGrid(profile, state),
       gradientEdit: state.gradientEdit,
       transforming: state.transforming,
+      lockRotation: state.lockRotation,
       measurementMode: state.measurementMode,
       editingTextId: state.editingTextId,
       renamingLabelId: state.renamingLabelId,
@@ -153,7 +154,14 @@ export function renderFromEditorState(
 
 function sceneContentDependsOnOverlay(overlays: RenderOverlays): boolean {
   return (
-    overlays.rotationPreview != null || overlays.nodeEditState != null || overlays.playing === true
+    overlays.rotationPreview != null ||
+    overlays.nodeEditState != null ||
+    overlays.playing === true ||
+    overlays.transforming === true ||
+    overlays.editingTextId != null ||
+    overlays.penState != null ||
+    overlays.pencilState != null ||
+    overlays.gradientEdit != null
   )
 }
 

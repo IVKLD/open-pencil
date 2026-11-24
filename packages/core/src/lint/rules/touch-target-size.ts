@@ -30,11 +30,12 @@ function isPluralControlWord(word: string): boolean {
 }
 
 function isInteractive(name: string): boolean {
+  if (name.length === 0) return false
   return nameWords(name).some((word) => CONTROL_WORDS.has(word) || isPluralControlWord(word))
 }
 
 function isPluralOnlyControlGroup(name: string, childCount: number): boolean {
-  if (childCount < 2) return false
+  if (name.length === 0 || childCount < 2) return false
   const words = nameWords(name)
   return words.some(isPluralControlWord) && !words.some((word) => CONTROL_WORDS.has(word))
 }
@@ -48,17 +49,24 @@ export default defineRule({
   },
   match: ['FRAME', 'COMPONENT', 'INSTANCE', 'RECTANGLE', 'ELLIPSE'],
   check(node, context) {
+    const nodeName = node.name ?? ''
     // A row of controls named in the plural is not one target; its controls are.
-    if (!isInteractive(node.name) || isPluralOnlyControlGroup(node.name, node.childIds.length))
+    if (
+      !nodeName ||
+      !isInteractive(nodeName) ||
+      isPluralOnlyControlGroup(nodeName, node.childIds.length)
+    )
       return
     const config = context.getConfig() as { minSize?: number } | undefined
     const minSize = config?.minSize ?? DEFAULT_MIN_SIZE
     if (node.width >= minSize && node.height >= minSize) return
     // A control nested in another control (the icon of a button) is not its own target.
     for (let ancestor = context.getParent(node); ancestor; ancestor = context.getParent(ancestor)) {
+      const ancestorName = ancestor.name ?? ''
       if (
-        isInteractive(ancestor.name) &&
-        !isPluralOnlyControlGroup(ancestor.name, ancestor.childIds.length)
+        ancestorName &&
+        isInteractive(ancestorName) &&
+        !isPluralOnlyControlGroup(ancestorName, ancestor.childIds.length)
       ) {
         return
       }

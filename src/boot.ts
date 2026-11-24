@@ -6,7 +6,7 @@ import { diagnosticsMessages } from '@open-pencil/vue/i18n'
 import { createOpenOverlaysPlugin } from '@open-pencil/vue/lifecycle/overlays'
 import { createRetainedScopePlugin } from '@open-pencil/vue/lifecycle/retention'
 
-import './app.css'
+// css imported in main.ts
 import { recordRuntimeError } from '@/app/diagnostics'
 import { installNativeFigArchives } from '@/app/document/io/native-fig'
 import { preloadCanvasKit } from '@/app/editor/canvas/canvaskit'

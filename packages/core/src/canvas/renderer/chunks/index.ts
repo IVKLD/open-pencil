@@ -292,7 +292,9 @@ export class RenderChunkIndex {
   ): { removed: RenderChunk[]; added: RenderChunk[] } | null {
     const topIndex = graph.getNode(pageId)?.childIds.indexOf(topId) ?? -1
     if (topIndex < 0) return null
-    const removed = this.getChunksDependingOnNode(rootId)
+    const removed = this.getChunksDependingOnNode(rootId).filter(
+      (chunk) => chunk.nodeId === rootId || this.isUnder(graph, chunk.nodeId, rootId)
+    )
     const { start, end } = this.orderWindow(graph, topId, topIndex, ownerId, rootId, removed)
     for (const chunk of removed) this.unregister(chunk)
     const counts = countDescendants(graph, [rootId]).counts

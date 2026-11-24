@@ -115,7 +115,15 @@ function setupPageRowRef(
             <ContextMenuTrigger as-child>
               <div
                 data-test-id="pages-row"
-                :ref="(value) => setupPageRowRef(value, pg, pages, actions.move)"
+                :ref="
+                  (value) =>
+                    setupPageRowRef(
+                      rename.editingId.value === pg.id ? null : value,
+                      pg,
+                      pages,
+                      actions.move
+                    )
+                "
                 :class="pageStyles(pg, currentPageId).row()"
                 :data-page-id="pg.id"
                 :data-active="pg.id === currentPageId || undefined"
@@ -138,6 +146,9 @@ function setupPageRowRef(
                     :aria-label="pageMessages.pageNameLabel"
                     :class="pageStyles(pg, currentPageId).renameInput()"
                     :value="pg.name"
+                    @pointerdown.stop
+                    @mousedown.stop
+                    @dragstart.prevent.stop
                     @blur="rename.commit(pg.id, $event)"
                     @keydown.stop="rename.onKeydown"
                   />

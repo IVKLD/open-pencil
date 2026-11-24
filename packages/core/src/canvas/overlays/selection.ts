@@ -111,10 +111,10 @@ function drawSingleSelection(
     const label = overlays.editingTextId ? graph.getNode(overlays.editingTextId) : undefined
     if (label?.parentId !== node.id) drawConnectorSelection(r, canvas, graph, node, preview)
   } else if (isPathText) {
-    drawTextPathSelection(r, canvas, node, rotation, graph, editing, preview)
+    drawTextPathSelection(r, canvas, node, rotation, graph, editing, preview, overlays.lockRotation)
     if (!editing) drawSelectionLabels(r, canvas, graph, selectedIds, overlays)
   } else {
-    drawNodeSelection(r, canvas, node, rotation, graph, preview)
+    drawNodeSelection(r, canvas, node, rotation, graph, preview, overlays.lockRotation)
     drawSelectionLabels(r, canvas, graph, selectedIds, overlays)
   }
   r.selectionPaint.setColor(r.selColor())
@@ -159,7 +159,7 @@ export function drawSelection(
     .map((id) => graph.getNode(id))
     .filter((n): n is SceneNode => n !== undefined)
   if (nodes.length === 0) return
-  drawGroupBounds(r, canvas, nodes, graph, preview)
+  drawGroupBounds(r, canvas, nodes, graph, preview, overlays.lockRotation)
 
   drawSelectionLabels(r, canvas, graph, selectedIds, overlays)
 }
@@ -202,11 +202,12 @@ function drawTextPathSelection(
   rotation: number,
   graph: SceneGraph,
   editing: boolean,
-  preview?: RotationPreview | null
+  preview?: RotationPreview | null,
+  lockRotation?: boolean
 ): void {
   const pathGeometry = selectionPath(node)
   if (!pathGeometry) {
-    drawNodeSelection(r, canvas, node, rotation, graph, preview)
+    drawNodeSelection(r, canvas, node, rotation, graph, preview, lockRotation)
     return
   }
 
@@ -237,12 +238,14 @@ function drawTextPathSelection(
           box.y,
           box.x + box.width,
           box.y + box.height,
-          rotationHandleLayout(node, r.sceneGeometry(graph, preview), r.zoom, {
-            x: box.x,
-            y: box.y,
-            width: box.width,
-            height: box.height
-          })
+          lockRotation
+            ? null
+            : rotationHandleLayout(node, r.sceneGeometry(graph, preview), r.zoom, {
+                x: box.x,
+                y: box.y,
+                width: box.width,
+                height: box.height
+              })
         )
       }
 
@@ -330,7 +333,8 @@ export function drawNodeSelection(
   node: SceneNode,
   rotation: number,
   graph: SceneGraph,
-  preview?: RotationPreview | null
+  preview?: RotationPreview | null,
+  lockRotation?: boolean
 ): void {
   drawSelectionRect(
     r,
@@ -347,7 +351,7 @@ export function drawNodeSelection(
         x2,
         y2,
         // A generated frame such as a sticky note may stay upright, and a line turns by its ends.
-        !layerRotates(node) || isLineLike(node)
+        !layerRotates(node) || isLineLike(node) || lockRotation
           ? null
           : rotationHandleLayout(node, r.sceneGeometry(graph, preview), r.zoom, {
               x: x1,
@@ -411,7 +415,8 @@ export function drawGroupBounds(
   canvas: Canvas,
   nodes: SceneNode[],
   graph: SceneGraph,
-  preview?: RotationPreview | null
+  preview?: RotationPreview | null,
+  lockRotation?: boolean
 ): void {
   const geometry = r.sceneGeometry(graph, preview)
   const bounds = computeBounds(nodes.map(geometry.bounds))
@@ -425,7 +430,7 @@ export function drawGroupBounds(
   r.auxStroke.setColor(r.selColor(SELECTION_DASH_ALPHA))
   r.auxStroke.setPathEffect(null)
   canvas.drawRect(r.ck.LTRBRect(minX, minY, maxX, maxY), r.auxStroke)
-  drawBoundsHandlesScreenSpace(r, canvas, minX, minY, maxX, maxY)
+  drawBoundsHandlesScreenSpace(r, canvas, minX, minY, maxX, maxY, lockRotation)
 }
 
 export function drawHandle(r: SkiaRenderer, canvas: Canvas, x: number, y: number): void {
@@ -454,13 +459,15 @@ function drawBoundsHandlesScreenSpace(
   minX: number,
   minY: number,
   maxX: number,
-  maxY: number
+  maxY: number,
+  lockRotation?: boolean
 ): void {
   if (!hasTransformHandles(maxX - minX, maxY - minY)) return
   drawHandleScreenSpace(r, canvas, minX, minY)
   drawHandleScreenSpace(r, canvas, maxX, minY)
   drawHandleScreenSpace(r, canvas, minX, maxY)
   drawHandleScreenSpace(r, canvas, maxX, maxY)
+  if (lockRotation) return
   const midX = (minX + maxX) / 2
   const rotationHandleY = minY - ROTATION_HANDLE_DISTANCE
   canvas.drawLine(midX, minY, midX, rotationHandleY, r.selectionPaint)

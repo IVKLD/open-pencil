@@ -1,5 +1,6 @@
 import { compact } from 'es-toolkit/array'
 export function isDefaultName(name: string): boolean {
+  if (!name || name.length === 0) return false
   return /^(Frame|Rectangle|Ellipse|Line|Text|Group|Vector|Polygon|Star|Section|Component|Instance|Slice)\s*\d*$/i.test(
     name
   )
@@ -11,6 +12,7 @@ export function isDefaultName(name: string): boolean {
  * `button`, `2`, and "Rectangle" does not contain `cta`.
  */
 export function nameWords(name: string): string[] {
+  if (!name || name.length === 0) return []
   return compact(
     name
       .replaceAll(/([a-z\d])([A-Z])/g, '$1 $2')
@@ -47,7 +49,7 @@ export function getNodePath(node: LintPathNode): string[] {
   const path: string[] = []
   let current: LintPathNode | undefined = node
   while (current) {
-    path.unshift(current.name)
+    path.unshift(current.name ?? '')
     current = current.parent
   }
   return path

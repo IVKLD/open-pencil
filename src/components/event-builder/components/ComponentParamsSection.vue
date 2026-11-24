@@ -4,77 +4,126 @@ import { computed, ref, watch } from 'vue'
 import type { SceneNode } from '@open-pencil/scene-graph'
 
 import { useEditorStore } from '@/app/editor/active-store'
-import { shadrHexToColor } from '@/app/integrations/shadr/converter'
 import { getShadrData, setShadrData } from '@/app/integrations/shadr/data'
+import type { ShadrParamValue } from '@/app/integrations/shadr/types'
 import AppInput from '@/components/ui/input/AppInput.vue'
+import Tip from '@/components/ui/overlay/Tip.vue'
 import PanelSection from '@/components/ui/panel/PanelSection.vue'
 
 interface Props {
   node: SceneNode
 }
 
-const props = defineProps<Props>()
+const { node } = defineProps<Props>()
 
 const editor = useEditorStore()
 const componentName = ref('')
-const params = ref<Record<string, unknown>>({})
+const params = ref<Record<string, ShadrParamValue>>({})
+
+function findTextChildForParam(targetNode: SceneNode, paramKey: string): SceneNode | undefined {
+  if (targetNode.type === 'TEXT') {
+    const singleKeys = new Set(['label', 'title', 'value', 'text', 'body'])
+    if (singleKeys.has(paramKey)) {
+      return targetNode
+    }
+  }
+  const children = editor.graph.getChildren(targetNode.id)
+  const textChildren = children.filter((c) => c.type === 'TEXT')
+  for (const tc of textChildren) {
+    const childData = getShadrData(tc, editor.graph)
+    const childId = childData.blockId || tc.name || ''
+    if (childId === paramKey || childId.endsWith(`_${paramKey}`)) {
+      return tc
+    }
+  }
+  if (textChildren.length === 1) {
+    const singleKeys = new Set(['label', 'title', 'value', 'text', 'body'])
+    if (singleKeys.has(paramKey)) {
+      return textChildren[0]
+    }
+  }
+  return undefined
+}
 
 watch(
-  () => props.node,
+  () => node,
   (currentNode) => {
-    const data = getShadrData(currentNode)
+    const data = getShadrData(currentNode, editor.graph)
     componentName.value = data.componentName ?? ''
-    params.value = { ...(data.componentParams ?? {}) }
+    const currentParams = { ...data.componentParams }
+    for (const key of Object.keys(currentParams)) {
+      const tc = findTextChildForParam(currentNode, key)
+      if (tc && tc.text !== undefined) {
+        currentParams[key] = tc.text
+      }
+    }
+    params.value = currentParams
   },
   { immediate: true, deep: true }
 )
 
+const HIDDEN_PARAM_KEYS = new Set(['id'])
+
 const hasComponent = computed(() => Boolean(componentName.value))
-const paramEntries = computed(() => Object.entries(params.value))
+const paramEntries = computed(() =>
+  Object.entries(params.value).filter(([key]) => !HIDDEN_PARAM_KEYS.has(key))
+)
 
 function updateParam(key: string, value: string) {
   params.value[key] = value
-
-  // Update canvas nodes visually
-  if (key === 'label' || key === 'title') {
-    const children = editor.graph.getChildren(props.node.id)
-    const textChild = children.find((c) => c.type === 'TEXT')
-    if (textChild) {
-      editor.graph.updateNode(textChild.id, { text: value })
-    }
-  } else if (key === 'width' || key === 'height') {
-    const num = Number(value)
-    if (Number.isFinite(num) && num > 0) {
-      editor.graph.updateNode(props.node.id, { [key]: num })
-    }
-  } else if (key === 'color' && typeof value === 'string') {
-    const { color, opacity } = shadrHexToColor(value)
-    editor.graph.updateNode(props.node.id, {
-      fills: [{ type: 'SOLID', color, opacity, visible: true }]
-    })
+  const tc = findTextChildForParam(node, key)
+  if (tc) {
+    editor.graph.updateNode(tc.id, { text: value })
   }
+  setShadrData(editor, [node], { componentParams: { ...params.value } })
+}
 
-  setShadrData(editor, [props.node], { componentParams: { ...params.value } })
+function paramTip(key: string): string {
+  return `Параметр '${key}' компонента [${componentName.value}]`
+}
+
+function inputTip(key: string): string {
+  return `Значение параметра '${key}' компонента [${componentName.value}]. Обновляет узел и JSON Shadr`
+}
+
+const tips = {
+  visualPropsHint:
+    'Текст, цвета, размеры и скругления синхронизируются автоматически с холста OpenPencil'
 }
 </script>
 
 <template>
   <PanelSection v-if="hasComponent" :label="`Параметры [${componentName}]`">
-    <div class="flex flex-col gap-2">
+    <div v-if="paramEntries.length > 0" class="flex flex-col gap-2">
       <div
         v-for="[key, val] in paramEntries"
         :key="key"
         class="flex items-center justify-between gap-2"
       >
-        <label class="text-[10px] text-muted w-20 shrink-0 font-medium truncate">
-          {{ key }}
-        </label>
-        <AppInput
-          :model-value="String(val ?? '')"
-          class="flex-1"
-          @update:model-value="(newVal) => updateParam(key, String(newVal))"
-        />
+        <Tip :label="paramTip(key)" side="left">
+          <label class="text-2xs text-muted w-20 shrink-0 font-medium truncate cursor-help">
+            {{ key }}
+          </label>
+        </Tip>
+        <div class="flex-1">
+          <Tip :label="inputTip(key)" side="top">
+            <AppInput
+              :model-value="String(val ?? '')"
+              size="xs"
+              class="w-full"
+              @update:model-value="(newVal) => updateParam(key, String(newVal))"
+            />
+          </Tip>
+        </div>
       </div>
+    </div>
+    <div v-else class="text-2xs text-muted py-1">
+      <Tip :label="tips.visualPropsHint" side="top">
+        <span class="cursor-help">
+          Визуальные свойства (текст, цвета, размеры, скругления) настраиваются напрямую на холсте
+          OpenPencil.
+        </span>
+      </Tip>
     </div>
   </PanelSection>
 </template>

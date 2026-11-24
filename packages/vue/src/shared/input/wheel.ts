@@ -10,13 +10,12 @@ const WHEEL_DELTA_LINE = 1
 const WHEEL_DELTA_PAGE = 2
 
 /*
- * Wheel navigation follows Figma's, measured in Figma 126 with real trackpad recordings and its
- * own wheel handler. Every event pans twice its delta, at most 120 px. Ctrl+wheel, which is how
+ * Wheel navigation pans its delta, at most 60 px (reduced by 50% from the 2x 120 px baseline). Ctrl+wheel, which is how
  * Chromium reports a touchpad pinch (deltaY = -100 ln scale), zooms by 2^(-deltaY / 50); a
  * mouse wheel zoom (Meta+wheel, or Ctrl with a Windows wheel notch) zooms by e^(-0.005 deltaY).
  */
-const PAN_SCALE = 2
-const MAX_PAN_PER_EVENT = 120
+const PAN_SCALE = 1
+const MAX_PAN_PER_EVENT = 60
 const PINCH_ZOOM_PER_DELTA = Math.LN2 / 50
 const WHEEL_ZOOM_PER_DELTA = 0.005
 const MAX_ZOOM_STEP = Math.log(10)
@@ -24,14 +23,14 @@ const MAX_ZOOM_STEP = Math.log(10)
 /*
  * Windows reports each mouse wheel notch as wheelDelta 120. Figma moves 8 units per notch and
  * multiplies the step by 2.5 for each notch that follows within 50 ms in the same direction, up
- * to 120 units, or 40 while zooming, so a slow turn moves 16 px and a fast spin speeds up.
+ * to 60 units, or 40 while zooming, so a slow turn moves 8 px and a fast spin speeds up.
  */
 const WHEEL_NOTCH = 120
 const MIN_WHEEL_NOTCH = 99
 const NOTCH_STEP = 8
 const NOTCH_ACCELERATION = 2.5
 const NOTCH_ACCELERATION_WINDOW_MS = 50
-const MAX_NOTCH_PAN = 120
+const MAX_NOTCH_PAN = 60
 const MAX_NOTCH_ZOOM = 40
 
 /**
@@ -99,15 +98,42 @@ function capLength(delta: WheelPanDelta, max: number): WheelPanDelta {
   return { dx: (delta.dx * max) / length, dy: (delta.dy * max) / length }
 }
 
-/** Whole wheel notches in deltaY's direction, when this Windows event is a mouse wheel notch. */
-function windowsNotches(event: WheelInput): WheelPanDelta | null {
-  if (!Number.isInteger(event.deltaX) || !Number.isInteger(event.deltaY)) return null
-  const notches =
-    event.wheelDeltaX !== undefined && event.wheelDeltaY !== undefined
-      ? { dx: -event.wheelDeltaX, dy: -event.wheelDeltaY }
-      : normalizedWheelDelta(event)
-  if (Math.abs(notches.dx) < MIN_WHEEL_NOTCH && Math.abs(notches.dy) < MIN_WHEEL_NOTCH) return null
-  return { dx: notches.dx / WHEEL_NOTCH, dy: notches.dy / WHEEL_NOTCH }
+/** Whole wheel notches in deltaY's direction, when this event is a mouse wheel notch. */
+function wheelNotches(event: WheelInput): WheelPanDelta | null {
+  if (event.deltaMode === WHEEL_DELTA_LINE) {
+    if (event.deltaX === 0 && event.deltaY === 0) return null
+    return { dx: event.deltaX, dy: event.deltaY }
+  }
+  if (event.deltaMode === WHEEL_DELTA_PAGE) {
+    return { dx: event.deltaX * 10, dy: event.deltaY * 10 }
+  }
+
+  // Legacy wheelDelta fields from Chromium/WebKit (multiples of 120):
+  if (
+    event.wheelDeltaX !== undefined &&
+    event.wheelDeltaY !== undefined &&
+    (Math.abs(event.wheelDeltaX) >= MIN_WHEEL_NOTCH ||
+      Math.abs(event.wheelDeltaY) >= MIN_WHEEL_NOTCH)
+  ) {
+    if (!Number.isInteger(event.deltaX) || !Number.isInteger(event.deltaY)) {
+      if (Math.abs(event.deltaX) < 20 && Math.abs(event.deltaY) < 20) return null
+    }
+    return { dx: -event.wheelDeltaX / WHEEL_NOTCH, dy: -event.wheelDeltaY / WHEEL_NOTCH }
+  }
+
+  const normalized = normalizedWheelDelta(event)
+  const maxDelta = Math.max(Math.abs(normalized.dx), Math.abs(normalized.dy))
+
+  // Fractional small deltas (< 20px) represent continuous trackpad movement:
+  if (maxDelta < 20 && (!Number.isInteger(event.deltaX) || !Number.isInteger(event.deltaY)))
+    return null
+
+  // Large deltas (>= 20px) or integer deltas represent discrete mouse wheel clicks:
+  const notchUnit = maxDelta >= MIN_WHEEL_NOTCH ? WHEEL_NOTCH : Math.max(30, maxDelta)
+  return {
+    dx: normalized.dx / notchUnit,
+    dy: normalized.dy / notchUnit
+  }
 }
 
 function zoomStep(delta: number, perDelta: number): WheelStep {
@@ -116,7 +142,7 @@ function zoomStep(delta: number, perDelta: number): WheelStep {
 }
 
 /**
- * Turns wheel events into pan and zoom steps. It keeps the last Windows notch so a fast spin
+ * Turns wheel events into pan and zoom steps. It keeps the last notch so a fast spin
  * accelerates, so each canvas uses its own. `zoomSpeed` multiplies how far each event zooms.
  */
 export function createWheelSteps(
@@ -146,7 +172,7 @@ export function createWheelSteps(
 
   return function wheelStep(event: WheelInput): WheelStep {
     const zoom = isWheelZoom(event)
-    const notches = platform === 'windows' ? windowsNotches(event) : null
+    const notches = platform !== 'mac' ? wheelNotches(event) : null
     const delta = notches ? notchStep(event, notches, zoom) : normalizedWheelDelta(event)
 
     if (zoom) {
@@ -205,8 +231,9 @@ export function setupWheelPanZoom(
     })
     editor.setHoveredNode(null)
     if (wheelAccum.hasZoom) {
+      const clampedScale = Math.max(0.7, Math.min(1.4, wheelAccum.zoomScale))
       editor.setZoomAroundPoint(
-        editor.state.zoom * wheelAccum.zoomScale,
+        editor.state.zoom * clampedScale,
         wheelAccum.zoomCenterX,
         wheelAccum.zoomCenterY
       )

@@ -73,11 +73,28 @@ function joinsLayer(node: SceneNode) {
   )
 }
 
+function hasAncestorInSet(id: string, set: ReadonlySet<string>, editor: Editor): boolean {
+  for (
+    let cur = editor.graph.getNode(id)?.parentId;
+    cur;
+    cur = editor.graph.getNode(cur)?.parentId
+  ) {
+    if (set.has(cur)) return true
+  }
+  return false
+}
+
 function collectMoveOriginals(editor: Editor) {
-  const originals = new Map<string, MovePlace>()
+  const targetIds = new Set<string>()
   for (const selectedId of editor.state.selectedIds) {
     if (isLockedInTree(selectedId, editor)) continue
-    const id = autoLayoutMoveTarget(selectedId, editor)
+    targetIds.add(autoLayoutMoveTarget(selectedId, editor))
+  }
+
+  const originals = new Map<string, MovePlace>()
+  for (const id of targetIds) {
+    // Skip descendants whose ancestor is already moving so they don't move twice.
+    if (hasAncestorInSet(id, targetIds, editor)) continue
     const node = editor.graph.getNode(id)
     if (node) {
       const parentId = node.parentId ?? editor.state.currentPageId

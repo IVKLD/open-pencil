@@ -50,6 +50,8 @@ export interface RenderOverlays {
   /** The gradient whose handles to draw in place of the selection. */
   gradientEdit?: GradientEdit | null
   transforming?: boolean
+  /** Disables drawing rotation handles on selections. */
+  lockRotation?: boolean
   measurementMode?: MeasurementMode
   editingTextId?: string | null
   /** The layer whose name a field over the canvas renames, whose title the canvas leaves out. */

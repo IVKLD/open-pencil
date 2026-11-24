@@ -4,9 +4,9 @@ import { useSelectionState } from '@open-pencil/vue/editor/selection-state'
 import ActionBuilderSection from './event-builder/components/ActionBuilderSection.vue'
 import BlockPropertiesSection from './event-builder/components/BlockPropertiesSection.vue'
 import ComponentParamsSection from './event-builder/components/ComponentParamsSection.vue'
-import ConnectionSection from './event-builder/components/ConnectionSection.vue'
+import ConnectionStatusHeader from './event-builder/components/ConnectionStatusHeader.vue'
 import EmptySelectionState from './event-builder/components/EmptySelectionState.vue'
-import SyncSection from './event-builder/components/SyncSection.vue'
+import SpecialElementSection from './event-builder/components/SpecialElementSection.vue'
 
 const { selectedNode: node } = useSelectionState()
 </script>
@@ -16,12 +16,12 @@ const { selectedNode: node } = useSelectionState()
     data-test-id="event-builder-panel"
     class="flex min-w-0 flex-1 flex-col overflow-y-auto select-text text-xs"
   >
-    <ConnectionSection />
-    <SyncSection />
+    <ConnectionStatusHeader />
 
     <template v-if="node">
       <ComponentParamsSection :node="node" />
       <BlockPropertiesSection :node="node" />
+      <SpecialElementSection :node="node" />
       <ActionBuilderSection :node="node" />
     </template>
     <EmptySelectionState v-else />

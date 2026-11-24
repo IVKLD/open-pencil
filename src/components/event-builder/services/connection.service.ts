@@ -6,14 +6,11 @@ import {
   selectedPageId,
   serverComponents,
   serverPages,
-  serverUrl,
   status,
-  STORAGE_KEY_URL,
   token
 } from '@/app/integrations/shadr/store/state'
 
-import { componentService } from './component.service'
-import { pageService } from './page.service'
+import { componentService, pageService } from './config.service'
 
 export async function checkConnection(): Promise<boolean> {
   status.value = 'connecting'
@@ -44,14 +41,9 @@ export async function checkConnection(): Promise<boolean> {
   }
 }
 
-export function saveCredentials(newUrl: string, newToken: string) {
-  serverUrl.value = newUrl.trim()
-  token.value = newToken.trim()
-
+/** Saves user-provided access key and tests connection */
+export function saveUserKey(newKey: string): void {
+  token.value = newKey.trim()
   setCookie(COOKIE_KEY_TOKEN, token.value)
-
-  if (typeof localStorage !== 'undefined') {
-    localStorage.setItem(STORAGE_KEY_URL, serverUrl.value)
-  }
   void checkConnection()
 }

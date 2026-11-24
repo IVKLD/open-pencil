@@ -46,6 +46,7 @@ function getResizeCursorForSelection(cx: number, cy: number, editor: Editor): st
 }
 
 function getRotationCursorForSelection(cx: number, cy: number, editor: Editor): string | null {
+  if (editor.state.lockRotation) return null
   if (editor.state.selectedIds.size > 1) {
     const box = selectionBox(editor)
     if (!box || !selectionTakes(editor, layerRotates)) return null

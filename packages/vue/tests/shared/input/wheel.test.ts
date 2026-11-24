@@ -81,14 +81,14 @@ function zoomScale(step: WheelStep): number {
 }
 
 describe('wheel steps', () => {
-  test('pans twice the touchpad delta, at most 120 px along the movement', () => {
+  test('pans the touchpad delta, at most 60 px along the movement', () => {
     const step = createWheelSteps('mac')
-    expect(step(event(4))).toEqual({ kind: 'pan', dx: 0, dy: 8 })
-    expect(step(event(400))).toEqual({ kind: 'pan', dx: 0, dy: 120 })
+    expect(step(event(4))).toEqual({ kind: 'pan', dx: 0, dy: 4 })
+    expect(step(event(400))).toEqual({ kind: 'pan', dx: 0, dy: 60 })
     const diagonal = step(event(100, { deltaX: 100 }))
     if (diagonal.kind !== 'pan') throw new Error('expected a pan')
-    expect(diagonal.dx).toBeCloseTo(84.85, 2)
-    expect(diagonal.dy).toBeCloseTo(84.85, 2)
+    expect(diagonal.dx).toBeCloseTo(42.43, 2)
+    expect(diagonal.dy).toBeCloseTo(42.43, 2)
   })
 
   test('zooms a Ctrl+wheel pinch by 2^(-deltaY / 50) on every platform', () => {
@@ -106,31 +106,37 @@ describe('wheel steps', () => {
 
   test('scales each zoom by the zoom speed and still limits one event to 10x', () => {
     let speed = 0.25
-    const step = createWheelSteps('other', () => speed)
-    // A Linux Ctrl+wheel notch reports deltaY 120 and zooms 2^(-120 / 50) at full speed.
-    expect(zoomScale(step(event(120, { ctrlKey: true })))).toBeCloseTo(2 ** (-0.25 * 2.4))
+    const step = createWheelSteps('mac', () => speed)
+    expect(zoomScale(step(event(50, { ctrlKey: true })))).toBeCloseTo(0.5 ** 0.25)
     expect(zoomScale(step(event(10, { metaKey: true })))).toBeCloseTo(Math.exp(-0.0125))
     speed = 2
     expect(zoomScale(step(event(-1000, { ctrlKey: true })))).toBeCloseTo(10)
   })
 
-  test('leaves panning at the same rate whatever the zoom speed', () => {
-    expect(createWheelSteps('mac', () => 0.25)(event(4))).toEqual({ kind: 'pan', dx: 0, dy: 8 })
+  test('zooms a Ctrl+notch on Linux like Windows rather than exploding by 5x', () => {
+    const step = createWheelSteps('other')
+    expect(zoomScale(step(notch(0, { ctrlKey: true })))).toBeCloseTo(Math.exp(-0.04))
+    const freshStep = createWheelSteps('other')
+    expect(zoomScale(freshStep(event(120, { ctrlKey: true })))).toBeCloseTo(Math.exp(-0.04))
   })
 
-  test('moves 16 px per Windows wheel notch and speeds up when notches come within 50 ms', () => {
+  test('leaves panning at the same rate whatever the zoom speed', () => {
+    expect(createWheelSteps('mac', () => 0.25)(event(4))).toEqual({ kind: 'pan', dx: 0, dy: 4 })
+  })
+
+  test('moves 8 px per Windows wheel notch and speeds up when notches come within 50 ms', () => {
     const step = createWheelSteps('windows')
-    expect(panY(step(notch(0)))).toBe(16)
-    expect(panY(step(notch(30)))).toBe(40)
-    expect(panY(step(notch(60)))).toBe(100)
-    expect(panY(step(notch(90)))).toBe(120)
-    expect(panY(step(notch(200)))).toBe(16)
+    expect(panY(step(notch(0)))).toBe(8)
+    expect(panY(step(notch(30)))).toBe(20)
+    expect(panY(step(notch(60)))).toBe(50)
+    expect(panY(step(notch(90)))).toBe(60)
+    expect(panY(step(notch(200)))).toBe(8)
   })
 
   test('restarts the notch step when the direction changes', () => {
     const step = createWheelSteps('windows')
-    expect(panY(step(notch(0)))).toBe(16)
-    expect(panY(step(notch(20, { deltaY: -100, wheelDeltaY: 120 })))).toBe(-16)
+    expect(panY(step(notch(0)))).toBe(8)
+    expect(panY(step(notch(20, { deltaY: -100, wheelDeltaY: 120 })))).toBe(-8)
   })
 
   test('zooms a Ctrl+notch on Windows like a mouse wheel zoom', () => {
@@ -139,15 +145,15 @@ describe('wheel steps', () => {
   })
 
   test('treats fractional Windows deltas and other platforms as touchpad movement', () => {
-    expect(panY(createWheelSteps('windows')(event(4.5, { wheelDeltaY: -120 })))).toBe(9)
-    expect(panY(createWheelSteps('mac')(notch(0)))).toBe(120)
+    expect(panY(createWheelSteps('windows')(event(4.5, { wheelDeltaY: -120 })))).toBe(4.5)
+    expect(panY(createWheelSteps('mac')(notch(0)))).toBe(60)
   })
 
   test('keeps panning a bounded step through a long fast spin', () => {
     const step = createWheelSteps('windows')
     let last = 0
     for (let index = 0; index < 1000; index++) last = panY(step(notch(index * 10)))
-    expect(last).toBe(120)
+    expect(last).toBe(60)
   })
 
   test('zooms a WebKit pinch as far as the same pinch zooms in Chromium', () => {

@@ -18,6 +18,7 @@ import { useToolbarActions } from '@/components/toolbar/actions'
 import DesktopToolbar from '@/components/toolbar/DesktopToolbar.vue'
 import { useToolLabels } from '@/components/toolbar/labels'
 import MobileToolbar from '@/components/toolbar/MobileToolbar.vue'
+import ShadrToolbarButton from '@/components/toolbar/ShadrToolbarButton.vue'
 import ToolbarContextMenu from '@/components/toolbar/ToolbarContextMenu.vue'
 import type { ToolbarActionItem } from '@/components/toolbar/types'
 import { useMenuUI } from '@/components/ui/menu/menu'
@@ -120,6 +121,7 @@ function onActionTap(item: ToolbarActionItem) {
           <template v-for="action in hiddenActions" :key="action">
             <InsertIconButton v-if="action === 'insert-icon'" anchored />
           </template>
+          <ShadrToolbarButton mobile :ui="toolbarUI" />
         </template>
       </MobileToolbar>
     </ToolbarContextMenu>

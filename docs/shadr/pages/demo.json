@@ -72,12 +72,13 @@
                     "color": "9a9aa8",
                     "position": {
                         "x": 32,
-                        "y": 82
+                        "y": 80
                     },
                     "size": {
                         "width": 64,
                         "height": 64
                     },
+                    "lineWidth": 456,
                     "text": "Every element here is a glyph placed by a display entity.",
                     "textAlign": "left"
                 },
@@ -88,12 +89,13 @@
                     "color": "9a9aa8",
                     "position": {
                         "x": 32,
-                        "y": 132
+                        "y": 140
                     },
                     "size": {
                         "width": 64,
                         "height": 64
                     },
+                    "lineWidth": 456,
                     "text": "Every element here is a glyph placed by a display entity.",
                     "font": "shadr_sharp",
                     "textAlign": "left"

@@ -52,9 +52,16 @@ export function connectAutomation(
   authToken: string | null = null,
   automationURL = __OPENPENCIL_LOCAL_AUTOMATION_URL__
 ) {
-  const token = authToken ?? randomHex(32)
+  const token =
+    authToken ??
+    (typeof __OPENPENCIL_LOCAL_AUTOMATION_TOKEN__ === 'string' &&
+    __OPENPENCIL_LOCAL_AUTOMATION_TOKEN__
+      ? __OPENPENCIL_LOCAL_AUTOMATION_TOKEN__
+      : randomHex(32))
   let ws: WebSocket | null = null
   let reconnectTimer: ReturnType<typeof setTimeout> | undefined
+  let reconnectAttempts = 0
+  const MAX_RECONNECT_ATTEMPTS = 5
   let intentionalDisconnect = false
 
   const { handleRequest: handleAutomationRequest } = createAutomationCommandHandlers(
@@ -67,6 +74,7 @@ export function connectAutomation(
   }
 
   function connect() {
+    if (!automationURL || intentionalDisconnect) return
     let socket: WebSocket
     try {
       socket = new WebSocket(automationURL)
@@ -81,6 +89,7 @@ export function connectAutomation(
     }
 
     socket.onopen = () => {
+      reconnectAttempts = 0
       console.debug('[Automation] WebSocket connected to MCP server')
       socket.send(JSON.stringify({ type: 'register', token }))
     }
@@ -142,11 +151,15 @@ export function connectAutomation(
 
   function scheduleReconnect() {
     clearTimeout(reconnectTimer)
-    reconnectTimer = setTimeout(connect, 2000)
+    if (intentionalDisconnect || reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) return
+    reconnectAttempts++
+    const delay = Math.min(1000 * 2 ** reconnectAttempts, 15000)
+    reconnectTimer = setTimeout(connect, delay)
   }
 
   function disconnect() {
     intentionalDisconnect = true
+    reconnectAttempts = MAX_RECONNECT_ATTEMPTS
     clearTimeout(reconnectTimer)
     ws?.close()
     ws = null

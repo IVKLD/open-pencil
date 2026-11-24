@@ -28,6 +28,7 @@ export function tryStartRotation(
   cx: number,
   cy: number
 ): boolean {
+  if (editor.state.lockRotation) return false
   if (editor.state.selectedIds.size > 1) return tryStartSelectionRotation(editor, setDrag, cx, cy)
   if (editor.state.selectedIds.size !== 1) return false
   const id = [...editor.state.selectedIds][0]
@@ -89,6 +90,7 @@ function tryStartSelectionRotation(
   cx: number,
   cy: number
 ): boolean {
+  if (editor.state.lockRotation) return false
   const box = selectionBox(editor)
   if (!box || !hitTestBoxRotation(cx, cy, box, editor.renderer?.zoom ?? 1)) return false
   const members = compact(
