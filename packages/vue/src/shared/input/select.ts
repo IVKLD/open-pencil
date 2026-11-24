@@ -10,7 +10,7 @@ import { tryStartConnectorLineDrag } from '#vue/shared/input/connector/line'
 import { tryStartGradientDrag } from '#vue/shared/input/gradient'
 import { tryStartLineEndDrag } from '#vue/shared/input/line/end'
 import { tryStartResize } from '#vue/shared/input/resize'
-import { tryStartSelectionResize } from '#vue/shared/input/resize/selection'
+import { selectionBox, tryStartSelectionResize } from '#vue/shared/input/resize/selection'
 import {
   createSelectionMoveDrag,
   pressSelects,
@@ -104,6 +104,12 @@ function selectOnPress(hit: SceneNode, shiftKey: boolean, selects: boolean, edit
   editor.enterContainerOf(hit.id)
 }
 
+function isPointInMultiSelectionBox(cx: number, cy: number, editor: Editor): boolean {
+  const box = selectionBox(editor)
+  if (!box) return false
+  return cx >= box.x && cx <= box.x + box.width && cy >= box.y && cy <= box.y + box.height
+}
+
 export function handleSelectDown(
   e: MouseEvent,
   cx: number,
@@ -129,6 +135,13 @@ export function handleSelectDown(
   if (tryStartHandleDrag(cx, cy, sx, sy, e.altKey, editor, fns, tryStartRotation, setDrag)) return
 
   const deep = e.metaKey || e.ctrlKey
+  if (!e.shiftKey && !deep && isPointInMultiSelectionBox(cx, cy, editor)) {
+    if (!resolveEditorProfile(editor.state).edits) return
+    if (selectionIsLocked(editor)) return
+    setDrag(createSelectionMoveDrag(cx, cy, sx, sy, editor, e.altKey))
+    return
+  }
+
   const hit = tinySelectionAt(cx, cy, editor) ?? resolveHit(cx, cy, fns, deep)
   if (!hit) {
     startMarquee(cx, cy, editor, setDrag)

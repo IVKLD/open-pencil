@@ -163,4 +163,20 @@ describe('presses after reaching a nested layer', () => {
     expect(selected()).toEqual([row1.name])
     expect(editor.state.enteredContainerId).toBeNull()
   })
+
+  test('a press inside a multi-selection box drags the multi-selection instead of switching focus to an underlying layer', () => {
+    const { first, second, pressAt, selected } = swatchRows()
+    editor.select([first.swatch.id, second.swatch.id])
+    const expected = selected()
+
+    // Click in the gap between first.swatch and second.swatch inside the multi-selection box
+    const a1 = editor.graph.getAbsolutePosition(first.swatch.id)
+    const a2 = editor.graph.getAbsolutePosition(second.swatch.id)
+    const midX = (a1.x + first.swatch.width + a2.x) / 2
+    const midY = a1.y + first.swatch.height / 2
+    const drag = pressAt(midX, midY)
+
+    expect(selected()).toEqual(expected)
+    expect(drag).toMatchObject({ type: 'move' })
+  })
 })
