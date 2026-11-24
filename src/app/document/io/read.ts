@@ -72,6 +72,7 @@ export function createOpenActions({
       await preparationController
         .waitForPresentation(load.id, editor.state)
         .catch((error: unknown) => {
+          if (load.signal.aborted) return
           const message = error instanceof Error ? error.message : String(error)
           load.fail({ code: 'render-failed', message, retryable: true })
           toast.error(notificationMessages.get().operationFailed({ error: message }))

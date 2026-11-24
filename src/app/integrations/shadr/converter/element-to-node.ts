@@ -427,6 +427,14 @@ function appendElementChildren(
   }
 }
 
+function isShadrBackgroundElement(elem: ShadrElement): boolean {
+  if (elem.type === 'blur') return true
+  const id = elem.id || (typeof elem.params?.id === 'string' ? elem.params.id : '')
+  if (id === 'backdrop' || id === 'scrim' || id.endsWith('_scrim')) return true
+  if (elem.component === 'panel') return true
+  return !elem.children?.length && (id === 'panel' || id.endsWith('_panel'))
+}
+
 /** Converts a ShadrElement into an OpenPencil SceneNode in the graph */
 export function elementToNode(
   elem: ShadrElement,
@@ -450,6 +458,7 @@ export function elementToNode(
     y,
     width,
     height,
+    locked: isShadrBackgroundElement(elem),
     pluginData: [
       { pluginId: SHADR_PLUGIN_ID, key: SHADR_DATA_KEY, value: JSON.stringify(shadrData) }
     ]

@@ -291,9 +291,13 @@ describe('Shadr Converter', () => {
       expect(priceFill?.color?.g).toBeGreaterThan(0.7)
     }
 
-    // Verify font family is mapped to Inter without warning
+    // Verify background layers are locked while interactive offers stay unlocked
+    const backdrop = nodes.find((n) => n.name === 'backdrop')
     const shopPanel = nodes.find((n) => n.name.includes('shop_panel'))
+    expect(backdrop?.locked).toBe(true)
     expect(shopPanel).toBeDefined()
+    expect(shopPanel?.locked).toBe(true)
+    expect(offer0?.locked).toBe(false)
   })
 
   test('correctly maps Shadr and Minecraft font variants to Inter and preserves original font on round-trip', () => {
