@@ -179,4 +179,24 @@ describe('presses after reaching a nested layer', () => {
     expect(selected()).toEqual(expected)
     expect(drag).toMatchObject({ type: 'move' })
   })
+
+  test('a press inside a selected leaf layer behind another layer keeps and drags the selected layer', () => {
+    const { first, pressAt, selected, center } = swatchRows()
+    const behind = editor.graph.createNode('RECTANGLE', first.frame.id, {
+      name: 'behind',
+      x: first.swatch.x,
+      y: first.swatch.y,
+      width: first.swatch.width,
+      height: first.swatch.height
+    })
+    // Move `behind` before `first.swatch` in childIds so `first.swatch` is in front
+    editor.graph.reparentNode(behind.id, first.frame.id, 0)
+    editor.select([behind.id])
+
+    const at = center(first.swatch)
+    const drag = pressAt(at.x, at.y)
+
+    expect(selected()).toEqual(['behind'])
+    expect(drag).toMatchObject({ type: 'move' })
+  })
 })

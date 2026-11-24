@@ -104,10 +104,15 @@ function selectOnPress(hit: SceneNode, shiftKey: boolean, selects: boolean, edit
   editor.enterContainerOf(hit.id)
 }
 
-function isPointInMultiSelectionBox(cx: number, cy: number, editor: Editor): boolean {
+function isPointInProtectedSelection(cx: number, cy: number, editor: Editor): boolean {
   const box = selectionBox(editor)
-  if (!box) return false
-  return cx >= box.x && cx <= box.x + box.width && cy >= box.y && cy <= box.y + box.height
+  if (box) {
+    return cx >= box.x && cx <= box.x + box.width && cy >= box.y && cy <= box.y + box.height
+  }
+  if (editor.state.selectedIds.size !== 1) return false
+  const [onlyId] = editor.state.selectedIds
+  if (editor.graph.isOpenContainer(onlyId)) return false
+  return editor.graph.isPointInNode(onlyId, cx, cy)
 }
 
 export function handleSelectDown(
@@ -135,7 +140,7 @@ export function handleSelectDown(
   if (tryStartHandleDrag(cx, cy, sx, sy, e.altKey, editor, fns, tryStartRotation, setDrag)) return
 
   const deep = e.metaKey || e.ctrlKey
-  if (!e.shiftKey && !deep && isPointInMultiSelectionBox(cx, cy, editor)) {
+  if (!e.shiftKey && !deep && isPointInProtectedSelection(cx, cy, editor)) {
     if (!resolveEditorProfile(editor.state).edits) return
     if (selectionIsLocked(editor)) return
     setDrag(createSelectionMoveDrag(cx, cy, sx, sy, editor, e.altKey))
