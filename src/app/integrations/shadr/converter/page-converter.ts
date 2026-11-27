@@ -84,12 +84,13 @@ function reparentLooseNodes(
     }
     return true
   })
+  const rootAbs = graph.getAbsolutePosition(rootFrame.id)
   for (const loose of looseNodes) {
     const abs = graph.getAbsolutePosition(loose.id)
     graph.reparentNode(loose.id, rootFrame.id)
     graph.updateNode(loose.id, {
-      x: Math.round(abs.x - rootFrame.x),
-      y: Math.round(abs.y - rootFrame.y)
+      x: Math.round(abs.x - rootAbs.x),
+      y: Math.round(abs.y - rootAbs.y)
     })
   }
   return graph.getChildren(rootFrame.id)
@@ -225,6 +226,17 @@ function resolveExportPageName(
   return rawName.toLowerCase().replace(/[^a-z0-9_-]/g, '_')
 }
 
+function clampElementLayers(elements: ShadrElement[], maxLayer: number): void {
+  for (const elem of elements) {
+    if (elem.layer !== undefined && elem.layer > maxLayer) {
+      elem.layer = maxLayer
+    }
+    if (elem.children?.length) {
+      clampElementLayers(elem.children, maxLayer)
+    }
+  }
+}
+
 /** Converts OpenPencil Canvas scene into Shadr Page JSON */
 export function exportPage(editor: EditorStore, pageName?: string): ShadrPage {
   const graph = editor.graph
@@ -238,6 +250,9 @@ export function exportPage(editor: EditorStore, pageName?: string): ShadrPage {
 
   const sourceNodes = rootFrame ? reparentLooseNodes(graph, rootFrame, topNodes) : topNodes
   const { blocks, scrollRegions } = collectExportBlocks(sourceNodes, graph)
+  if (screen.cursorLayer && screen.cursorLayer > 0) {
+    clampElementLayers(blocks, screen.cursorLayer - 1)
+  }
 
   const result: ShadrPage = {
     name: resolveExportPageName(pageName, rootFrame, targetPage),

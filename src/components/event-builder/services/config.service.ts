@@ -16,7 +16,7 @@ function createResourceService<T extends object>(resource: string) {
       http.get<{ document: T }>(`${base}/${encodeURIComponent(id)}`).then((r) => r.document),
 
     save: (id: string, item: T): Promise<void> =>
-      http.put(`${base}/${encodeURIComponent(id)}`, item),
+      http.put(`${base}/${encodeURIComponent(id)}`, item, { timeout: 30000 }),
 
     delete: (id: string): Promise<void> => http.delete(`${base}/${encodeURIComponent(id)}`)
   }

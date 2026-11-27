@@ -371,7 +371,9 @@ function applyVisualProps(elem: ShadrElement, props: Partial<SceneNode>): void {
     props.horizontalConstraint = ALIGN_TO_CONSTRAINT[elem.align]
   }
 
-  if (elem.opacity !== undefined && elem.opacity < 255 && !elem.color) {
+  // opacity: 0 without color represents a transparent container fill in Shadr,
+  // not a hidden node that hides all children in OpenPencil.
+  if (elem.opacity !== undefined && elem.opacity > 0 && elem.opacity < 255 && !elem.color) {
     props.opacity = Math.max(0, Math.min(1, elem.opacity / 255))
   }
 

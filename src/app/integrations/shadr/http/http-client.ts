@@ -31,11 +31,20 @@ export const shadrFetch = createFetch().create({
 
     options.baseURL = IS_BROWSER ? '/api/shadr' : rawURL
 
+    const headers = new Headers(options.headers)
     if (currentToken) {
-      const headers = new Headers(options.headers)
       headers.set('Authorization', `Bearer ${currentToken}`)
-      options.headers = headers
     }
+    if (
+      options.body !== undefined &&
+      !(options.body instanceof Uint8Array) &&
+      !(options.body instanceof Blob) &&
+      !(options.body instanceof ArrayBuffer) &&
+      !headers.has('Content-Type')
+    ) {
+      headers.set('Content-Type', 'application/json; charset=utf-8')
+    }
+    options.headers = headers
 
     const method = options.method || 'GET'
     const url = typeof request === 'string' ? request : (request as Request).url || ''
@@ -97,9 +106,16 @@ export const http = {
     return new Uint8Array(buffer)
   },
 
-  async putBinary(url: string, data: Uint8Array | Blob, contentType = 'image/png'): Promise<void> {
-    const headers = new Headers({ 'Content-Type': contentType })
+  async putBinary(
+    url: string,
+    data: Uint8Array | Blob,
+    contentType = 'image/png',
+    options?: FetchOptions
+  ): Promise<void> {
+    const headers = new Headers(options?.headers)
+    headers.set('Content-Type', contentType)
     await shadrFetch(url, {
+      ...options,
       method: 'PUT',
       headers,
       body: data

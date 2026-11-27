@@ -352,7 +352,7 @@ function applyStrokeOutline(node: SceneNode, base: ShadrElement): void {
 
 function resolveExportFont(node: SceneNode, customFont?: string): string | undefined {
   if (customFont && customFont.startsWith('shadr')) {
-    return customFont
+    return customFont === 'shadr_bold' ? 'shadr_semibold' : customFont
   }
   if (node.fontFamily === 'Pixelify Sans' || node.fontFamily === 'Silkscreen') {
     if (customFont && customFont !== 'minecraft:default' && customFont !== 'default') {
@@ -361,7 +361,6 @@ function resolveExportFont(node: SceneNode, customFont?: string): string | undef
     return undefined
   }
   const weight = node.fontWeight
-  if (weight && weight >= 700) return 'shadr_bold'
   if (weight && weight >= 600) return 'shadr_semibold'
   return 'shadr'
 }
@@ -416,21 +415,27 @@ function buildTextElement(
   return base
 }
 
+export function sanitizeTextureId(name: string, fallbackHash?: string): string {
+  const cleaned = name
+    .replace(/^img_/, '')
+    .replace(/\.[a-zA-Z0-9]+$/, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9_]/g, '_')
+    .replace(/^_+|_+$/g, '')
+  if (!cleaned) {
+    return fallbackHash ? `texture_${fallbackHash.slice(0, 8)}` : 'texture'
+  }
+  if (cleaned.length <= 48) return cleaned
+  return fallbackHash ? `${cleaned.slice(0, 39)}_${fallbackHash.slice(0, 8)}` : cleaned.slice(0, 48)
+}
+
 function applyTexture(node: SceneNode, base: ShadrElement, data: ShadrNodeData): void {
   const primaryFill = (node.fills ?? []).find((f) => f.visible !== false)
-  const hasImageFill = primaryFill?.type === 'IMAGE'
-  const textureName =
-    data.textureName ||
-    (hasImageFill
-      ? (node.name ?? '')
-          .replace(/^img_/, '')
-          .replace(/[^a-zA-Z0-9_-]/g, '_')
-          .toLowerCase() || `texture_${primaryFill?.imageHash?.slice(0, 8)}`
-      : undefined)
+  const rawName = data.textureName || (primaryFill?.type === 'IMAGE' ? node.name : undefined)
+  if (!rawName) return
 
-  if (!textureName) return
   base.type = 'image'
-  base.image = textureName
+  base.image = sanitizeTextureId(rawName, primaryFill?.imageHash)
   base.fit = data.imageFit || (primaryFill?.imageScaleMode === 'FIT' ? 'contain' : 'cover')
 }
 
@@ -453,10 +458,10 @@ function applyFillsAndOpacity(node: SceneNode, base: ShadrElement, data?: ShadrN
     const fillOpacity = primaryFill.opacity ?? 1
     const nodeOpacity = node.opacity ?? 1
     base.opacity = Math.round(fillOpacity * nodeOpacity * 255)
-  } else if (node.opacity !== undefined && node.opacity < 1) {
-    base.opacity = Math.round(node.opacity * 255)
-  } else if (data?.rawOpacity !== undefined) {
-    base.opacity = data.rawOpacity
+  } else {
+    // Transparent containers (GROUP or unfilled FRAME/RECTANGLE) must export opacity: 0
+    // so Shadr does not render a default opaque white rectangle.
+    base.opacity = 0
   }
 }
 

@@ -120,13 +120,13 @@ export async function pullProject(editor: EditorStore): Promise<boolean> {
       await editor.switchPage(firstPage.id)
     }
 
-    void imageService.preloadGraphTextures(editor)
+    await imageService.preloadGraphTextures(editor)
 
     // Record canonical baselines for all loaded scenes
     const sceneNames = shadrConverter.listProjectSceneNames(editor)
     for (const sceneName of sceneNames) {
       const exported = shadrConverter.exportPage(editor, sceneName)
-      recordSceneBaseline(sceneName, exported)
+      recordSceneBaseline(exported.name, exported)
     }
 
     // Record canonical baselines for all components
@@ -266,6 +266,7 @@ function flushActiveTextEdit(editor: EditorStore): void {
 export async function pushProject(editor: EditorStore): Promise<boolean> {
   return withSync('Ошибка синхронизации проекта', async () => {
     flushActiveTextEdit(editor)
+    await imageService.autoUploadGraphImages(editor)
     const { pages, components } = shadrConverter.exportProject(editor)
 
     await Promise.all([
@@ -301,6 +302,12 @@ export async function switchScene(sceneName: string, editor: EditorStore): Promi
   selectedPageId.value = sceneName
   currentDocumentId.value = sceneName
   currentDocumentType.value = sceneName === '_components' ? 'component' : 'page'
+  if (sceneName !== '_components') {
+    const exported = shadrConverter.exportPage(editor, sceneName)
+    if (!sceneBaselines.has(exported.name)) {
+      recordSceneBaseline(exported.name, exported)
+    }
+  }
   return true
 }
 
@@ -316,7 +323,7 @@ export async function pullPage(pageId: string, editor: EditorStore): Promise<boo
     selectedPageId.value = pageId
     currentDocumentType.value = 'page'
     currentDocumentId.value = pageId
-    void imageService.preloadGraphTextures(editor)
+    await imageService.preloadGraphTextures(editor)
 
     const exported = shadrConverter.exportPage(editor, pageId)
     recordSceneBaseline(exported.name, exported)
@@ -362,15 +369,10 @@ export function getChangedScenes(editor: EditorStore): ShadrPage[] {
       if (currentStr !== baseline) {
         changed.push(exported)
       }
+    } else if (activePageScenes.has(normalizedName) || !serverPages.value.includes(normalizedName)) {
+      changed.push(exported)
     } else {
-      // If no baseline was recorded yet in this session:
-      // If it belongs to the active page being edited, consider it changed so edits aren't lost
-      if (activePageScenes.has(normalizedName)) {
-        changed.push(exported)
-      } else {
-        // Otherwise, establish baseline now so subsequent edits are detected
-        sceneBaselines.set(normalizedName, currentStr)
-      }
+      sceneBaselines.set(normalizedName, currentStr)
     }
   }
 
@@ -457,6 +459,7 @@ export async function pullComponent(componentId: string, editor: EditorStore): P
     selectedComponentId.value = componentId
     currentDocumentType.value = 'component'
     currentDocumentId.value = componentId
+    await imageService.preloadGraphTextures(editor)
     toast.info(`Компонент "${componentId}" загружен для редактирования!`)
   })
 }

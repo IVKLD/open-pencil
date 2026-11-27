@@ -28,7 +28,7 @@ export { colorToShadrHex, shadrHexToColor } from './converter/color'
 export { parseCoordinate } from './converter/math'
 export { componentRegistry, expandComponent } from './converter/template'
 export { elementToNode } from './converter/element-to-node'
-export { nodeToElement } from './converter/node-to-element'
+export { nodeToElement, sanitizeTextureId } from './converter/node-to-element'
 export {
   exportComponent,
   importComponent,
